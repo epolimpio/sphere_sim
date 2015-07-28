@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from matplotlib import cm
-import cPickle as pickle
+#import cPickle as pickle # For Python 3 is just pickle
+import pickle
 
 R=0.25
 data=pickle.load(open( 'sphere_data.p', "rb" ) )
@@ -12,7 +13,6 @@ n_vs_t=data[1]
 F_vs_t=data[2]
 
 N=len(r_vs_t[0])
-
 # setup figure, draw background
 def setup_figure():
     fig=plt.figure(1)
@@ -54,3 +54,4 @@ def animate(f):
 plt.clf()
 (fig,cells,directions,forces,centers)=setup_figure()
 anim = animation.FuncAnimation(fig, animate,frames=len(r_vs_t), interval=1, blit=False)
+plt.show()

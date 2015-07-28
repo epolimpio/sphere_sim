@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle as pickle
+#import cPickle as pickle # For Python 3 is just pickle
+import pickle
 
 # function for getting unit vectors in spherical coordinates for each position <r>
 def get_e_r(r):
@@ -22,16 +23,17 @@ def constrain_to_sphere(r):
     l=np.sqrt(np.sum(r**2))
     return r/l*rho
 
+# ----- PARAMETERS ----- #
 # number of particles
-N=36
+N=100
 
 # simulation parameters
-F_th_0=0.2
-mu_th=0.5
-mu_F=1.0
-eta_n=0.5
-K=2
-R=0.4
+F_th_0=0.2 #
+mu_th=0.5 #
+mu_F=1.0 #
+eta_n=0.5 #
+K=2 # elastic constant of sphere repulsion
+R=0.4 # radius of spheres
 
 # timestep
 dt=0.1
@@ -40,9 +42,10 @@ dt=0.1
 outfile='sphere_data.p'
 
 # calculate radius of sphere... kind of ugly due to random parameter <L>
-L=4
-rho=np.sqrt(L**2/(4*np.pi))
+L=4 # "typical length" of the particle 
+rho=np.sqrt(L**2/(4*np.pi)) # sphere radius
 
+# ----- INITIALIZE RANDOM POSITION AND ORIENTATION ----- #
 # get random positions (i.e. <th>,<phi> in spherical coordinates) for all particles
 th=np.pi*np.random.rand(N)
 phi=2*np.pi*np.random.rand(N)
@@ -64,14 +67,16 @@ r_vs_t=[]
 F_vs_t=[]
 n_vs_t=[]
 
+# ----- RUN FOR SEVERAL TIMES ----- #
 for t in range(0,300):
-    print t
-    
+    print(t)
+    # start with zeros
     F_th=np.zeros((N,3))
     F_r=np.zeros((N,3))
     F_tot=np.zeros((N,3))
     F_tot_plane=np.zeros((N,3))
 
+    # calculate forces
     for i in range(0,N):
         # calculate active force in direction <n_i>
         F_th[i,:]=F_th_0*n[i,:]

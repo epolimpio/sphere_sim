@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
-import cPickle as pickle
+#import cPickle as pickle # For Python 3 is just pickle
+import pickle
+
 
 projection=1 # 0 - cartesian projection, 1 - XY projection
 infile='sphere_data.p'
@@ -104,5 +106,6 @@ def animate(f):
 (fig,cells,forces,arrows)=setup_figure()
 
 anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(r_vs_t), interval=1, blit=False)
+plt.show()
 
 
