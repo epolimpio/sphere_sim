@@ -1,0 +1,399 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module stripack ! in 
+    interface  ! in :stripack
+        subroutine addnod(nst,k,x,y,z,list,lptr,lend,lnew,ier) ! in :stripack:stripack.f90
+            integer(kind=4) intent(in) :: nst
+            integer(kind=4), optional,intent(in),check(len(x)>=k),depend(x) :: k=len(x)
+            real(kind=8) dimension(k),intent(in) :: x
+            real(kind=8) dimension(k),intent(in),depend(k) :: y
+            real(kind=8) dimension(k),intent(in),depend(k) :: z
+            integer(kind=4) dimension(*),intent(in,out) :: list
+            integer(kind=4) dimension(*),intent(in,out) :: lptr
+            integer(kind=4) dimension(k),intent(in,out),depend(k) :: lend
+            integer(kind=4) intent(in,out) :: lnew
+            integer(kind=4) intent(out) :: ier
+        end subroutine addnod
+        function arc_cosine(c) ! in :stripack:stripack.f90
+            real(kind=8) :: c
+            real(kind=8) :: arc_cosine
+        end function arc_cosine
+        function areas(v1,v2,v3) ! in :stripack:stripack.f90
+            real(kind=8) dimension(3) :: v1
+            real(kind=8) dimension(3) :: v2
+            real(kind=8) dimension(3) :: v3
+            real(kind=8) :: areas
+        end function areas
+        subroutine bdyadd(kk,i1,i2,list,lptr,lend,lnew) ! in :stripack:stripack.f90
+            integer(kind=4) intent(in) :: kk
+            integer(kind=4) intent(in) :: i1
+            integer(kind=4) intent(in) :: i2
+            integer(kind=4) dimension(*),intent(in,out) :: list
+            integer(kind=4) dimension(*),intent(in,out) :: lptr
+            integer(kind=4) dimension(*),intent(in,out) :: lend
+            integer(kind=4) intent(in,out) :: lnew
+        end subroutine bdyadd
+        subroutine bnodes(n,list,lptr,lend,nodes,nb,na,nt) ! in :stripack:stripack.f90
+            integer(kind=4), optional,intent(in),check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            integer(kind=4) dimension(6 * n - 12) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            integer(kind=4) dimension(*) :: nodes
+            integer(kind=4) :: nb
+            integer(kind=4) :: na
+            integer(kind=4) :: nt
+        end subroutine bnodes
+        subroutine circum(v1,v2,v3,c,ier) ! in :stripack:stripack.f90
+            real(kind=8) dimension(3) :: v1
+            real(kind=8) dimension(3) :: v2
+            real(kind=8) dimension(3) :: v3
+            real(kind=8) dimension(3) :: c
+            integer(kind=4) :: ier
+        end subroutine circum
+        subroutine covsph(kk,n0,list,lptr,lend,lnew) ! in :stripack:stripack.f90
+            integer(kind=4) :: kk
+            integer(kind=4) :: n0
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4) :: lnew
+        end subroutine covsph
+        subroutine crlist(n,ncol,x,y,z,list,lend,lptr,lnew,ltri,listc,nb,xc,yc,zc,rc,ier) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            integer(kind=4), optional,check(shape(ltri,1)==ncol),depend(ltri) :: ncol=shape(ltri,1)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
+            integer(kind=4) dimension(n),depend(n) :: lend
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) :: lnew
+            integer(kind=4) dimension(6,ncol) :: ltri
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: listc
+            integer(kind=4) :: nb
+            real(kind=8) dimension(2 * n - 4),depend(n) :: xc
+            real(kind=8) dimension(2 * n - 4),depend(n) :: yc
+            real(kind=8) dimension(2 * n - 4),depend(n) :: zc
+            real(kind=8) dimension(2 * n - 4),depend(n) :: rc
+            integer(kind=4) :: ier
+        end subroutine crlist
+        subroutine delarc(n,io1,io2,list,lptr,lend,lnew,ier) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            integer(kind=4) :: io1
+            integer(kind=4) :: io2
+            integer(kind=4) dimension(6 * n - 12) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            integer(kind=4) :: lnew
+            integer(kind=4) :: ier
+        end subroutine delarc
+        subroutine delnb(n0,nb,n,list,lptr,lend,lnew,lph) ! in :stripack:stripack.f90
+            integer(kind=4) :: n0
+            integer(kind=4) :: nb
+            integer(kind=4), optional,check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            integer(kind=4) dimension(6 * n - 12) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            integer(kind=4) :: lnew
+            integer(kind=4) :: lph
+        end subroutine delnb
+        subroutine delnod(k,n,x,y,z,list,lptr,lend,lnew,lwk,iwk,ier) ! in :stripack:stripack.f90
+            integer(kind=4) :: k
+            integer(kind=4), optional,check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            real(kind=8) dimension(*) :: x
+            real(kind=8) dimension(*) :: y
+            real(kind=8) dimension(*) :: z
+            integer(kind=4) dimension(6 * n - 12) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            integer(kind=4) :: lnew
+            integer(kind=4) :: lwk
+            integer(kind=4) dimension(2,*) :: iwk
+            integer(kind=4) :: ier
+        end subroutine delnod
+        subroutine edge(in1,in2,x,y,z,lwk,iwk,list,lptr,lend,ier) ! in :stripack:stripack.f90
+            integer(kind=4) :: in1
+            integer(kind=4) :: in2
+            real(kind=8) dimension(*) :: x
+            real(kind=8) dimension(*) :: y
+            real(kind=8) dimension(*) :: z
+            integer(kind=4) :: lwk
+            integer(kind=4) dimension(2,*) :: iwk
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4) :: ier
+        end subroutine edge
+        subroutine getnp(x,y,z,list,lptr,lend,l,npts,df,ier) ! in :stripack:stripack.f90
+            real(kind=8) dimension(*) :: x
+            real(kind=8) dimension(*) :: y
+            real(kind=8) dimension(*) :: z
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4), optional,check(len(npts)>=l),depend(npts) :: l=len(npts)
+            integer(kind=4) dimension(l) :: npts
+            real(kind=8) :: df
+            integer(kind=4) :: ier
+        end subroutine getnp
+        subroutine insert(k,lp,list,lptr,lnew) ! in :stripack:stripack.f90
+            integer(kind=4) :: k
+            integer(kind=4) :: lp
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) :: lnew
+        end subroutine insert
+        function inside(p,lv,xv,yv,zv,nv,listv,ier) ! in :stripack:stripack.f90
+            real(kind=8) dimension(3) :: p
+            integer(kind=4), optional,check(len(xv)>=lv),depend(xv) :: lv=len(xv)
+            real(kind=8) dimension(lv) :: xv
+            real(kind=8) dimension(lv),depend(lv) :: yv
+            real(kind=8) dimension(lv),depend(lv) :: zv
+            integer(kind=4), optional,check(len(listv)>=nv),depend(listv) :: nv=len(listv)
+            integer(kind=4) dimension(nv) :: listv
+            integer(kind=4) :: ier
+            logical :: inside
+        end function inside
+        subroutine intadd(kk,i1,i2,i3,list,lptr,lend,lnew) ! in :stripack:stripack.f90
+            integer(kind=4) :: kk
+            integer(kind=4) :: i1
+            integer(kind=4) :: i2
+            integer(kind=4) :: i3
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4) :: lnew
+        end subroutine intadd
+        subroutine intrsc(p1,p2,cn,p,ier) ! in :stripack:stripack.f90
+            real(kind=8) dimension(3) :: p1
+            real(kind=8) dimension(3) :: p2
+            real(kind=8) dimension(3) :: cn
+            real(kind=8) dimension(3) :: p
+            integer(kind=4) :: ier
+        end subroutine intrsc
+        function jrand(n,ix,iy,iz) ! in :stripack:stripack.f90
+            integer(kind=4) :: n
+            integer(kind=4) :: ix
+            integer(kind=4) :: iy
+            integer(kind=4) :: iz
+            integer(kind=4) :: jrand
+        end function jrand
+        function left(x1,y1,z1,x2,y2,z2,x0,y0,z0) ! in :stripack:stripack.f90
+            real(kind=8) :: x1
+            real(kind=8) :: y1
+            real(kind=8) :: z1
+            real(kind=8) :: x2
+            real(kind=8) :: y2
+            real(kind=8) :: z2
+            real(kind=8) :: x0
+            real(kind=8) :: y0
+            real(kind=8) :: z0
+            logical :: left
+        end function left
+        function lstptr(lpl,nb,list,lptr) ! in :stripack:stripack.f90
+            integer(kind=4) :: lpl
+            integer(kind=4) :: nb
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) :: lstptr
+        end function lstptr
+        function nbcnt(lpl,lptr) ! in :stripack:stripack.f90
+            integer(kind=4) :: lpl
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) :: nbcnt
+        end function nbcnt
+        function nearnd(p,ist,n,x,y,z,list,lptr,lend,al) ! in :stripack:stripack.f90
+            real(kind=8) dimension(3) :: p
+            integer(kind=4) :: ist
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            real(kind=8) :: al
+            integer(kind=4) :: nearnd
+        end function nearnd
+        subroutine optim(x,y,z,na,list,lptr,lend,nit,iwk,ier) ! in :stripack:stripack.f90
+            real(kind=8) dimension(*) :: x
+            real(kind=8) dimension(*) :: y
+            real(kind=8) dimension(*) :: z
+            integer(kind=4), optional,check(shape(iwk,1)==na),depend(iwk) :: na=shape(iwk,1)
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4) :: nit
+            integer(kind=4) dimension(2,na) :: iwk
+            integer(kind=4) :: ier
+        end subroutine optim
+        subroutine r83vec_normalize(n,x,y,z) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+        end subroutine r83vec_normalize
+        subroutine scoord(px,py,pz,plat,plon,pnrm) ! in :stripack:stripack.f90
+            real(kind=8) :: px
+            real(kind=8) :: py
+            real(kind=8) :: pz
+            real(kind=8) :: plat
+            real(kind=8) :: plon
+            real(kind=8) :: pnrm
+        end subroutine scoord
+        function store(x) ! in :stripack:stripack.f90
+            real(kind=8) :: x
+            real(kind=8) :: y
+            real(kind=8) :: store
+            common /stcom/ y
+        end function store
+        subroutine swap(in1,in2,io1,io2,list,lptr,lend,lp21) ! in :stripack:stripack.f90
+            integer(kind=4) :: in1
+            integer(kind=4) :: in2
+            integer(kind=4) :: io1
+            integer(kind=4) :: io2
+            integer(kind=4) dimension(*) :: list
+            integer(kind=4) dimension(*) :: lptr
+            integer(kind=4) dimension(*) :: lend
+            integer(kind=4) :: lp21
+        end subroutine swap
+        function swptst(n1,n2,n3,n4,x,y,z) ! in :stripack:stripack.f90
+            integer(kind=4) :: n1
+            integer(kind=4) :: n2
+            integer(kind=4) :: n3
+            integer(kind=4) :: n4
+            real(kind=8) dimension(*) :: x
+            real(kind=8) dimension(*) :: y
+            real(kind=8) dimension(*) :: z
+            logical :: swptst
+        end function swptst
+        subroutine timestamp ! in :stripack:stripack.f90
+        end subroutine timestamp
+        subroutine trans(n,rlat,rlon,x,y,z) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(rlat)>=n),depend(rlat) :: n=len(rlat)
+            real(kind=8) dimension(n) :: rlat
+            real(kind=8) dimension(n),depend(n) :: rlon
+            real(kind=8) dimension(n),depend(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+        end subroutine trans
+        subroutine trfind(nst,p,n,x,y,z,list,lptr,lend,b1,b2,b3,i1,i2,i3) ! in :stripack:stripack.f90
+            integer(kind=4) :: nst
+            real(kind=8) dimension(3) :: p
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            real(kind=8) :: b1
+            real(kind=8) :: b2
+            real(kind=8) :: b3
+            integer(kind=4) :: i1
+            integer(kind=4) :: i2
+            integer(kind=4) :: i3
+        end subroutine trfind
+        subroutine trlist(n,list,lptr,lend,nrow,nt,ltri,ier) ! in :stripack:stripack.f90
+            integer(kind=4), optional,intent(in),check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            integer(kind=4) dimension(6 * n - 12),intent(in) :: list
+            integer(kind=4) dimension(6 * n - 12),intent(in),depend(n) :: lptr
+            integer(kind=4) dimension(n),intent(in),depend(n) :: lend
+            integer(kind=4), optional,intent(in),check(shape(ltri,0)==nrow),depend(ltri) :: nrow=shape(ltri,0)
+            integer(kind=4) intent(out) :: nt
+            integer(kind=4) dimension(nrow,*),intent(in,out) :: ltri
+            integer(kind=4) intent(out) :: ier
+        end subroutine trlist
+        subroutine trlist2(n,list,lptr,lend,nt,ltri,ier) ! in :stripack:stripack.f90
+            integer(kind=4), optional,intent(in),check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)
+            integer(kind=4) dimension(6 * n - 12),intent(in) :: list
+            integer(kind=4) dimension(6 * n - 12),intent(in),depend(n) :: lptr
+            integer(kind=4) dimension(n),intent(in),depend(n) :: lend
+            integer(kind=4) intent(out) :: nt
+            integer(kind=4) dimension(3,*),intent(in,out) :: ltri
+            integer(kind=4) intent(out) :: ier
+        end subroutine trlist2
+        subroutine trlprt(n,x,y,z,iflag,nrow,nt,ltri) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) :: iflag
+            integer(kind=4), optional,check(shape(ltri,0)==nrow),depend(ltri) :: nrow=shape(ltri,0)
+            integer(kind=4), optional,check(shape(ltri,1)==nt),depend(ltri) :: nt=shape(ltri,1)
+            integer(kind=4) dimension(nrow,nt) :: ltri
+        end subroutine trlprt
+        subroutine trmesh(n,x,y,z,list,lptr,lend,lnew,near,next,dist,ier) ! in :stripack:stripack.f90
+            integer(kind=4), optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n),intent(in) :: x
+            real(kind=8) dimension(n),intent(in),depend(n) :: y
+            real(kind=8) dimension(n),intent(in),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),intent(out),depend(n) :: list
+            integer(kind=4) dimension(6 * n - 12),intent(out),depend(n) :: lptr
+            integer(kind=4) dimension(n),intent(out),depend(n) :: lend
+            integer(kind=4) intent(out) :: lnew
+            integer(kind=4) dimension(n),intent(in,out),depend(n) :: near
+            integer(kind=4) dimension(n),intent(in,out),depend(n) :: next
+            real(kind=8) dimension(n),intent(in,out),depend(n) :: dist
+            integer(kind=4) intent(out) :: ier
+        end subroutine trmesh
+        subroutine trplot(lun,pltsiz,elat,elon,a,n,x,y,z,list,lptr,lend,title,numbr,ier) ! in :stripack:stripack.f90
+            integer(kind=4) :: lun
+            real(kind=8) :: pltsiz
+            real(kind=8) :: elat
+            real(kind=8) :: elon
+            real(kind=8) :: a
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            character*(*) :: title
+            logical :: numbr
+            integer(kind=4) :: ier
+        end subroutine trplot
+        subroutine trprnt(n,x,y,z,iflag,list,lptr,lend) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4) :: iflag
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+        end subroutine trprnt
+        subroutine voronoi_poly_count(n,lend,lptr,listc) ! in :stripack:stripack.f90
+            integer(kind=4), optional,check(len(lend)>=n),depend(lend) :: n=len(lend)
+            integer(kind=4) dimension(n) :: lend
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: listc
+        end subroutine voronoi_poly_count
+        subroutine vrplot(lun,pltsiz,elat,elon,a,n,x,y,z,nt,listc,lptr,lend,xc,yc,zc,title,numbr,ier) ! in :stripack:stripack.f90
+            integer(kind=4) :: lun
+            real(kind=8) :: pltsiz
+            real(kind=8) :: elat
+            real(kind=8) :: elon
+            real(kind=8) :: a
+            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
+            real(kind=8) dimension(n) :: x
+            real(kind=8) dimension(n),depend(n) :: y
+            real(kind=8) dimension(n),depend(n) :: z
+            integer(kind=4), optional,check((len(listc))/(3)>=nt),depend(listc) :: nt=(len(listc))/(3)
+            integer(kind=4) dimension(3 * nt) :: listc
+            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
+            integer(kind=4) dimension(n),depend(n) :: lend
+            real(kind=8) dimension(nt),depend(nt) :: xc
+            real(kind=8) dimension(nt),depend(nt) :: yc
+            real(kind=8) dimension(nt),depend(nt) :: zc
+            character*(*) :: title
+            logical :: numbr
+            integer(kind=4) :: ier
+        end subroutine vrplot
+    end interface 
+end python module stripack
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

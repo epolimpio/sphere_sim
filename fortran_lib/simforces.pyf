@@ -1,0 +1,19 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module simforces ! in 
+    interface  ! in :simforces
+        subroutine calc_force_elastic(n,pos,dir_vec,f_tot,v0,k,sigma) ! in :simforces:simforces.f90
+            integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
+            real(kind=8) dimension(3,n),intent(in) :: pos
+            real(kind=8) dimension(3,n),intent(in),depend(n) :: dir_vec
+            real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) intent(in) :: v0
+            real(kind=8) intent(in) :: k
+            real(kind=8) intent(in) :: sigma
+        end subroutine calc_force_elastic
+    end interface 
+end python module simforces
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

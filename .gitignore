@@ -100,3 +100,10 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 *.p
+*.bbl
+doc/README.aux
+*.blg
+doc/README.fdb_latexmk
+*.out
+doc/README.synctex.gz
+*.o

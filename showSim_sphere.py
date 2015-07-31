@@ -6,7 +6,7 @@ import pickle
 
 
 projection=1 # 0 - cartesian projection, 1 - XY projection
-infile='sphere_data.p'
+infile='data/sphere_data.p'
 
 data=pickle.load(open( infile, "rb" ) )
 
@@ -105,7 +105,7 @@ def animate(f):
     
 (fig,cells,forces,arrows)=setup_figure()
 
-anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(r_vs_t), interval=1, blit=False)
+anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(r_vs_t), interval=1000, blit=False)
 plt.show()
 
 

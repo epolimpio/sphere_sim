@@ -6,6 +6,7 @@ from scipy.spatial import Delaunay
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
 from myutils import readConfigFile 
+from fortran_lib import simforces
 import time
 start_time = time.time()
 
@@ -28,7 +29,6 @@ def get_e_phi(r):
 def constrain_to_sphere(r):
     l=np.sqrt(np.sum(r**2))
     return r/l*rho
-
 
 # ----- PARAMETERS ----- #
 parameters = readConfigFile('parameters.ini')
@@ -81,36 +81,9 @@ n_vs_t=[np.array([]),]*n_steps
 for t in range(0,n_steps):
     print(t)
 
-    # start with zeros
-    F_th=np.zeros((3,N))
-    F_r=np.zeros((3,N))
-    F_tot=np.zeros((3,N))
-    F_tot_plane=np.zeros((3,N))
-
-    # calculate forces
-    for i in range(0,N):
-        # calculate active force in direction <n_i>
-        F_th[:,i]=F_th_0*n[:,i]
-        for j in range(i+1,N):
-            # now calculate distance <R> between particles i and j
-            r_ij=r[:,i]-r[:,j]
-            R_ij=np.sqrt(np.sum(r_ij**2))
-            # check if particles i and j overlap
-            f=2*R-R_ij
-            if f>0:
-                # if so, calculate repulsive force on each particle
-                F_ij=K*r_ij/R_ij*f
-                F_ji=-F_ij
-                
-            else:
-                F_ij=np.array([0,0,0])
-                F_ji=np.array([0,0,0])
-            # add to total repulsive force    
-            F_r[:,i]=F_r[:,i]+F_ij
-            F_r[:,j]=F_r[:,j]+F_ji
-
     # caculate total of active and repulsive forces
-    F_tot=F_r+F_th
+    F_tot=simforces.calc_force_elastic(r,n,F_th_0,K,R)
+    F_tot_plane=np.zeros((3,N))
     # calculate force in the local plane at position <r_i>
     for i in range(0,N):    
         F_tot_plane[:,i]=F_tot[:,i]-np.inner(F_tot[:,i],e_r[:,i])*e_r[:,i]

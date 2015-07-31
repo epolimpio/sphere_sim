@@ -5,20 +5,23 @@ from matplotlib import cm
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
 
-R=0.25
-data=pickle.load(open( 'sphere_data.p', "rb" ) )
+R=0.4
+data=pickle.load(open( './data/sphere_data.p', "rb" ) )
 
-r_vs_t=data[0]
-n_vs_t=data[1]
-F_vs_t=data[2]
+parameters=data[0]
+r_vs_t=data[1]
+n_vs_t=data[2]
+F_vs_t=data[3]
 
-N=len(r_vs_t[0])
+# number of particles
+N = int(parameters['N'])
+n_steps = int(parameters['n_steps'])
 # setup figure, draw background
 def setup_figure():
     fig=plt.figure(1)
     plt.clf()
 
-    ax = plt.axes(xlim=(-2,2), ylim=(-2,2))
+    ax = plt.axes(xlim=(-3,3), ylim=(-3,3))
     ax.set_aspect('equal')
 
     cells=[]
@@ -41,17 +44,17 @@ def animate(f):
     r=r_vs_t[f]
     n=n_vs_t[f]
 
-    indsort=np.argsort(r[:,2])
+    indsort=np.argsort(r[2,:])
     
     for i in range(0,N):
         j=indsort[i]
-        c=int((r[j,2]+1)/2*256)
-        cells[i].center=(r[j,0],r[j,1])
+        c=int((r[2,j]+1)/2*256)
+        cells[i].center=(r[0,j],r[1,j])
         cells[i].set_facecolor(cm.copper(c))
         
     return (cells,directions,forces,centers)
 
 plt.clf()
 (fig,cells,directions,forces,centers)=setup_figure()
-anim = animation.FuncAnimation(fig, animate,frames=len(r_vs_t), interval=1, blit=False)
+anim = animation.FuncAnimation(fig, animate,frames=n_steps, interval=1, blit=False)
 plt.show()
