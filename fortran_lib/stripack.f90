@@ -1081,8 +1081,8 @@ subroutine crlist ( n, ncol, x, y, z, list, lend, lptr, lnew, &
 !
   implicit none
 
-  integer ( kind = 4 ) n
-  integer ( kind = 4 ) ncol
+  integer ( kind = 4 ), intent(in) :: n
+  integer ( kind = 4 ), intent(in) :: ncol
 
   real ( kind = 8 ) c(3)
   integer ( kind = 4 ) i1

@@ -5,7 +5,7 @@ from matplotlib import cm
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
 
-R=0.4
+R=1
 data=pickle.load(open( './data/sphere_data.p', "rb" ) )
 
 parameters=data[0]
@@ -21,7 +21,7 @@ def setup_figure():
     fig=plt.figure(1)
     plt.clf()
 
-    ax = plt.axes(xlim=(-3,3), ylim=(-3,3))
+    ax = plt.axes(xlim=(-5,5), ylim=(-5,5))
     ax.set_aspect('equal')
 
     cells=[]

@@ -6,9 +6,42 @@ from scipy.spatial import Delaunay
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
 from myutils import readConfigFile 
-from fortran_lib import simforces
+from fortran_lib import simforces, stripack
 import time
 start_time = time.time()
+
+def getDelaunayTrianglesOnSphere(r):
+    """
+    Use STRIPACK to get the Delaunay Triangles List,
+    assuming that the points are on a sphere.
+
+    INPUT: r(3,N) -> array with 3 coordinates for N particles
+    OUTPUT: tri_list(3,2*N-4) 
+    """
+    # Get the parameters (we do not assume unit sphere)
+    N = r.shape[1]
+    mod_r = np.sqrt(np.sum(r**2,1))
+    x = r[0,:]/mod_r
+    y = r[1,:]/mod_r
+    z = r[2,:]/mod_r
+
+    # Calculate the Delaunay triangulation
+    dist = np.zeros(N)
+    iwk = np.zeros(2*N)
+    list_,lptr,lend,lnew,near,next,dist,ier = stripack.trmesh(x,y,z,iwk[0:N],iwk[N:],dist)
+    if ier == 0:
+        # Construct the list of neighbors
+        ltri = np.zeros((3,2*N-4))
+        nt, ltri, ier = stripack.trlist2(list_,lptr,lend,ltri)
+        print(ltri)
+        if ier == 0:
+            # we need to correct it to start at 0 and transpose it
+            # to be in conformation with Python
+            return ltri.T - 1
+
+    # Case it fails
+    return None
+
 
 # function for getting unit vectors in spherical coordinates for each position <r>
 def get_e_r(r):
@@ -39,10 +72,7 @@ N = int(parameters['N'])
 # simulation parameters
 F_th_0 = float(parameters['F_th_0'])
 mu_th = float(parameters['mu_th'])
-mu_F = float(parameters['mu_F'])
 eta_n = float(parameters['eta_n'])
-K = float(parameters['K'])
-R = float(parameters['R'])
 n_steps = int(parameters['n_steps'])
 
 # timestep
@@ -51,24 +81,30 @@ dt = float(parameters['dt'])
 # outfile for data
 outfile = str(parameters['outfile'])
 
-# calculate radius of sphere... kind of ugly due to random parameter <L>
-L = float(parameters['L'])
-rho=np.sqrt(N*L**2/(4*np.pi)) # sphere radius
+# calculate radius of sphere from the packing parameter
+fpacking = float(parameters['fpacking'])
+rho=np.sqrt(N/4/fpacking) # sphere radius
 
 # ----- INITIALIZE RANDOM POSITION AND ORIENTATION ----- #
-# get random positions (i.e. <th>,<phi> in spherical coordinates) for all particles
-th=np.pi*np.random.rand(N)
-phi=2*np.pi*np.random.rand(N)
+# get random positions for all particles
+x = 2*np.random.rand(N) - 1
+y = 2*np.random.rand(N) - 1
+z = 2*np.random.rand(N) - 1
+# calculate module and place them on the sphere
+mod_r = np.sqrt(x**2+y**2+z**2)
+x = rho*x/mod_r
+y = rho*y/mod_r
+z = rho*z/mod_r
+
+r = np.vstack((x,y,z))
+
 # get random angle for unit vector <n> in the local plane
 nu=2*np.pi*np.random.rand(N)
-
-r=np.zeros((3,N))
 n=np.zeros((3,N))
 e_r=np.zeros((3,N))
 
-# calculate positions <r_i> and unit vectors <e_r,i> and <n_i>
+# calculate unit vectors <e_r,i> and <n_i>
 for i in range(0,N):
-    r[:,i]=rho*np.array([np.sin(th[i])*np.cos(phi[i]),np.sin(th[i])*np.sin(phi[i]),np.cos(th[i])])
     e_r[:,i]=get_e_r(r[:,i])
     n[:,i]=np.cos(nu[i])*get_e_th(r[:,i]) + np.sin(nu[i])*get_e_phi(r[:,i])
 
@@ -79,10 +115,12 @@ n_vs_t=[np.array([]),]*n_steps
 
 # ----- RUN FOR SEVERAL TIMES ----- #
 for t in range(0,n_steps):
-    print(t)
+    if (t+1) % 10 == 0:
+        print(t+1)
 
     # caculate total of active and repulsive forces
-    F_tot=simforces.calc_force_elastic(r,n,F_th_0,K,R)
+    F_tot=simforces.calc_force_elastic(r,n,F_th_0)
+    
     F_tot_plane=np.zeros((3,N))
     # calculate force in the local plane at position <r_i>
     for i in range(0,N):    
@@ -111,10 +149,14 @@ for t in range(0,n_steps):
         n[:,i]=n[:,i]/np.sqrt(np.sum(n[:,i]**2))
 
     # integrate equation of motion for position <r_i>
-    for i in range(0,N):  
-        dr = dt*mu_F*F_tot_plane[:,i]
+    ps = np.zeros(3)
+    for i in range(0,N):
+        ps += np.cross(r[:,i],F_tot_plane[:,i])
+        dr = dt*F_tot_plane[:,i]
         r[:,i] = r[:,i] + dr        
         r[:,i] = constrain_to_sphere(r[:,i])
+
+    print(np.sqrt(ps.dot(ps))/N/rho/F_th_0)
 
     # calculate unit vector <n_i> in the plane at the new position <r_i(t+dt)>
     for i in range(0,N):
