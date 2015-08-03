@@ -7,6 +7,7 @@ from scipy.spatial import Delaunay
 import pickle
 from myutils import readConfigFile 
 from fortran_lib import simforces, stripack
+from datetime import datetime
 import time
 start_time = time.time()
 
@@ -20,7 +21,7 @@ def getDelaunayTrianglesOnSphere(r):
     """
     # Get the parameters (we do not assume unit sphere)
     N = r.shape[1]
-    mod_r = np.sqrt(np.sum(r**2,1))
+    mod_r = np.sqrt(np.sum(r**2,0))
     x = r[0,:]/mod_r
     y = r[1,:]/mod_r
     z = r[2,:]/mod_r
@@ -33,7 +34,6 @@ def getDelaunayTrianglesOnSphere(r):
         # Construct the list of neighbors
         ltri = np.zeros((3,2*N-4))
         nt, ltri, ier = stripack.trlist2(list_,lptr,lend,ltri)
-        print(ltri)
         if ier == 0:
             # we need to correct it to start at 0 and transpose it
             # to be in conformation with Python
@@ -74,12 +74,15 @@ F_th_0 = float(parameters['F_th_0'])
 mu_th = float(parameters['mu_th'])
 eta_n = float(parameters['eta_n'])
 n_steps = int(parameters['n_steps'])
+n_save = int(parameters['n_save'])
+ftype = int(parameters['ftype'])
 
 # timestep
 dt = float(parameters['dt'])
 
 # outfile for data
-outfile = str(parameters['outfile'])
+outfile_video = datetime.strftime(datetime.now(),str(parameters['outfile_video']))
+outfile_analysis = datetime.strftime(datetime.now(),str(parameters['outfile_analysis']))
 
 # calculate radius of sphere from the packing parameter
 fpacking = float(parameters['fpacking'])
@@ -108,18 +111,36 @@ for i in range(0,N):
     e_r[:,i]=get_e_r(r[:,i])
     n[:,i]=np.cos(nu[i])*get_e_th(r[:,i]) + np.sin(nu[i])*get_e_phi(r[:,i])
 
-# clear variables for storing data    
-r_vs_t=[np.array([]),]*n_steps
-F_vs_t=[np.array([]),]*n_steps
-n_vs_t=[np.array([]),]*n_steps
+# clear variables for storing data  
+total_saved = n_steps // n_save
+
+# video data
+r_vs_t=[np.array([]),]*total_saved
+F_vs_t=[np.array([]),]*total_saved
+n_vs_t=[np.array([]),]*total_saved
+
+# parameters data
+p_angular=[np.zeros(3),]*n_steps
+av_pairs_dist = [0.0,]*n_steps
+
+# relax for 2*tau
+relax_time = int(1 // dt) + 1
 
 # ----- RUN FOR SEVERAL TIMES ----- #
-for t in range(0,n_steps):
-    if (t+1) % 10 == 0:
-        print(t+1)
+for k in range(0,n_steps+relax_time):
+
+    t = k-relax_time
+
+    if (t>=0) and ((t+1) % 10 == 0):
+        print('Time: %d' % (t+1))
+    elif (k+1) % 10 == 0:
+        print('Relaxation Time: %d' % (k+1))
 
     # caculate total of active and repulsive forces
-    F_tot=simforces.calc_force_elastic(r,n,F_th_0)
+    if (t<0) or (ftype == 0):
+        F_tot=simforces.calc_force_elastic(r,n,F_th_0)
+    else:
+        F_tot=simforces.calc_force_hooke(r,n,F_th_0, list_+1)
     
     F_tot_plane=np.zeros((3,N))
     # calculate force in the local plane at position <r_i>
@@ -156,19 +177,29 @@ for t in range(0,n_steps):
         r[:,i] = r[:,i] + dr        
         r[:,i] = constrain_to_sphere(r[:,i])
 
-    print(np.sqrt(ps.dot(ps))/N/rho/F_th_0)
-
     # calculate unit vector <n_i> in the plane at the new position <r_i(t+dt)>
     for i in range(0,N):
         e_r[:,i]=get_e_r(r[:,i])
         n[:,i] = n[:,i] - np.inner(n[:,i],e_r[:,i])*e_r[:,i]
         n[:,i]=n[:,i]/np.sqrt(np.sum(n[:,i]**2))
 
-    # store data for <r_i>, <N-i> and <F_tot,i>
-    r_vs_t[t] = np.array(r)
-    n_vs_t[t] = np.array(n)
-    F_vs_t[t] = np.array(F_tot)
+    # Calculate neighbors
+    list_ = getDelaunayTrianglesOnSphere(r)
+    pairs_dist, pairs = simforces.calc_pairs_dist(r, list_+1)
+
+    if t>=0:
+        if (t+1) % n_save == 0:
+            # store data for <r_i>, <N-i> and <F_tot,i> for image
+            index = (t+1) // n_save - 1
+            r_vs_t[index] = np.array(r)
+            n_vs_t[index] = np.array(n)
+            F_vs_t[index] = np.array(F_tot)
+
+        # store data for analysis (do not scale with N, so save for all t)
+        p_angular[t] = ps
+        av_pairs_dist[t] = np.mean(pairs_dist)
 
 # write data to disk
-pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t], open( outfile, "wb" ) )
+pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t], open( outfile_video, "wb" ) )
+pickle.dump( [parameters, p_angular, av_pairs_dist], open( outfile_analysis, "wb" ) )
 print("--- %s seconds ---" % (time.time() - start_time))
