@@ -3,23 +3,41 @@ from matplotlib import animation
 import numpy as np
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
+from datetime import datetime
+import sys
 
+if len(sys.argv)>=2:
+    str_date = sys.argv[1]
+else:
+    str_date = input("Insert date, format Y,m,d,H,M,S ->")
+
+try:
+    yy,mm,dd,h,m,s = [int(x) for x in str_date.split(',')[:6]]
+except:
+    print("ERROR!")
+    sys.exit("Invalid date. The format must be Y,m,d,H,M,S separated by comma.")
+
+outfile_video=datetime.strftime(datetime(yy,mm,dd,h,m,s),'./data/sphere_data_video_%Y-%m-%d_%H-%M-%S.p')
+
+try:
+    data=pickle.load(open(outfile_video, "rb" ) )
+except:
+    print("ERROR!")
+    sys.exit("Could not read file. Make sure that the file %s exists." % outfile_video)
+
+parameters=data[0]
+r_vs_t=data[1]
+n_vs_t=data[2]
+F_vs_t=data[3]
+
+# parameters
+N = int(parameters['N'])
+n_steps = int(parameters['n_steps'])
+n_save = int(parameters['n_save'])
+fpacking = float(parameters['fpacking'])
+rho=np.sqrt(N/4/fpacking) # sphere radius
 
 projection=1 # 0 - cartesian projection, 1 - XY projection
-infile='data/sphere_data.p'
-
-data=pickle.load(open( infile, "rb" ) )
-
-r_vs_t=data[0]
-F_vs_t=data[1]
-n_vs_t=data[2]
-
-# I should also save the parameters for each simulation, that way I can load
-# them rather than do this ugly stuff:
-N=len(r_vs_t[0])
-L=4
-R=0.4
-rho=np.sqrt(L**2/(4*np.pi))
 
 def draw_circle(r):
     th=np.linspace(0,2*np.pi,100)
@@ -47,7 +65,7 @@ def setup_figure():
     
         ax.set_aspect('equal')
     elif projection==1:
-        ax = plt.axes(xlim=(-(rho+0.5),(rho+0.5)), ylim=(-(rho+0.5),(rho+0.5)))
+        ax = plt.axes(xlim=(-(rho+1),(rho+1)), ylim=(-(rho+1),(rho+1)))
         (xo,yo)=draw_circle(rho)
         plt.plot(xo,yo,'--k')
         ax.set_aspect('equal')
@@ -78,34 +96,34 @@ def animate(f):
     n=n_vs_t[f]
 
     # plot cells that are present
-    for i in range(0,len(r)):
+    for i in range(0,N):
         if projection==1:
-            cells[i].set_data(r[i,0],r[i,1])
-            forces[i].set_data([r[i,0],r[i,0]+F[i,0]],[r[i,1],r[i,1]+F[i,1]])
-            arrows[i].set_data([r[i,0],r[i,0]+n[i,0]],[r[i,1],r[i,1]+F[i,1]])
+            cells[i].set_data(r[0,i],r[1,i])
+            forces[i].set_data([r[0,i],r[0,i]+F[0,i]],[r[1,i],r[1,i]+F[1,i]])
+            arrows[i].set_data([r[0,i],r[0,i]+n[0,i]],[r[1,i],r[1,i]+F[1,i]])
         elif projection==0:
-            l=np.sqrt(np.sum(r[i,:]**2))
-            th=np.arccos(r[i,2]/l)
-            phi=np.arctan2(r[i,1],r[i,0])
+            l=np.sqrt(np.sum(r[:,i]**2))
+            th=np.arccos(r[2,i]/l)
+            phi=np.arctan2(r[1,i],r[0,i])
             if phi<0:
                 phi=phi+2*np.pi
             cells[i].set_data(phi,th)
 
-            e_th=get_e_th(r[i,:])    
-            e_phi=get_e_phi(r[i,:])
+            e_th=get_e_th(r[:,i])    
+            e_phi=get_e_phi(r[:,i])
             
-            x_phi=np.inner(F[i,:],e_phi)
-            x_th=np.inner(F[i,:],e_th)
+            x_phi=np.inner(F[:,i],e_phi)
+            x_th=np.inner(F[:,i],e_th)
             forces[i].set_data([phi,phi+x_phi],[th,th+x_th])
 
-            x_phi=np.inner(n[i,:],e_phi)
-            x_th=np.inner(n[i,:],e_th)
+            x_phi=np.inner(n[:,i],e_phi)
+            x_th=np.inner(n[:,i],e_th)
             arrows[i].set_data([phi,phi+x_phi],[th,th+x_th])
     return cells, forces, arrows
     
 (fig,cells,forces,arrows)=setup_figure()
 
-anim = animation.FuncAnimation(fig, animate, init_func=init,frames=len(r_vs_t), interval=1000, blit=False)
+anim = animation.FuncAnimation(fig, animate, init_func=init,frames=n_steps//n_save, interval=1000, blit=False)
 plt.show()
 
 
