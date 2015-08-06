@@ -1,8 +1,6 @@
-import numpy as np 
-import sim_sphere_fortran as sf
+from myutils import extractVariablesFromString
 
-N = 100
-r = sf.constrain_to_sphere(2*np.random.rand(3,N)-1,2)
-data = np.ones((1,N))
-n_bins = 5
-print(sf.makePolarData(r, data, n_bins,'sum')[0])
+string = 'abcd_04-bb_kc-99-00'
+pattern = 'abcd_{0}-{1}_{2}-{3}-{4}'
+
+extractVariablesFromString(string,pattern)

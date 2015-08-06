@@ -59,7 +59,7 @@ Required Packages for the simulation:
 \item{matplotlib}
 \end{enumerate}
 
-\subsubsection{Install a FORTRAN COMPILER (I used G95)}
+\subsubsection{Install a FORTRAN compiler(I used G95)}
 
 You will need a Fortran compiler native for Windows. I used G95 which worked nicely. The installation procedure is quite simple and you can obtain the compiler at \url{http://www.fortran.com/the-fortran-company-homepage/whats-new/g95-windows-download/}.
 
@@ -104,9 +104,63 @@ print(a)
 \end{verbatim}
 When you run this you will see how the foo function is called and the matrix a (an identity matrix).
 
-\subsection{Compiling the code}
+\subsubsection{Compiling the code}
 
-Before you run the code, if the compiled libraries are not working, you will have to compile it on your machine. 
+Before you run the code, if the compiled libraries are not working, you will have to compile it on your machine. This is done by running the batch file \path{compile.bat} and choosing the appropriate FORTRAN file.
+
+\subsection{The model}
+
+We assume that the cells are self-propelled particles (SPP) moving in a overdamped regime and constrained to move on a sphere. Defining the projector operator of a vector in the plane tangent to the sphere in a point $\vec{r}_i$ as:
+
+\begin{equation}
+P_T \left(\hat{r}_i, \vec{a} \right) = \vec{a} - \left(\hat{r}_i \cdot \vec{a}\right)\hat{r}_i
+\end{equation}
+we know that by the balance of forces in this plane we have:
+
+\begin{equation}
+\gamma \dot{\vec{r}}_i = P_T \left(\hat{r}_i, \vec{F}_{\text{act}} + \sum_j \vec{F}_{ij} \right)
+\end{equation}
+where $\gamma$ is the friction coefficient, $\vec{F}_{\text{act}}$ is the active force, pointed in a direction $\hat{n}_i$ and $\vec{F}_{ij}$ is the two-body forces of different pairs. As usual we define $\vec{F}_{\text{act}} = \gamma \nu_0 \hat{n}_i$ such that the dynamics of the position is given by:
+
+\begin{equation}
+\dot{\vec{r}}_i = P_T \left(\hat{r}_i, \nu_0 \hat{n}_i + \mu \sum_j \vec{F}_{ij} \right)
+\end{equation}
+where $\mu=\gamma^{-1}$.
+
+The change in the direction $\hat{n}_i$, which is in the tangent plane, is given by its tendency to align to a vector $\hat{k}_j$. This leads to an interaction that tends to rotate the direction by $J \hat{n}_i \times \hat{k}_j$, $J$ denoting the coupling strength\footnote{If in the plane, this is equivalent to $J\sin \theta$, with $\theta$ denoting the angle between the unitary vectors. This is XY-model type interaction, although it is not related to the ``mean field'', or mean alignment, of the neighbor particles.}. This vector must be projected in the direction normal to the plane, and the direction of the movement of the direction vector is perpendicular both to the tangente plane and the direction vector, leading to:
+
+\begin{equation}
+\dot{\vec{n}}_i = \left[ \hat{r}_i \cdot \left(J \hat{n}_i \times \hat{k}_j \right) + \eta_n \xi_i \right]\left( \hat{r}_i \times \hat{n}_i \right)
+\end{equation}
+where $\eta_n$ is the noise strength and $\xi_i$ is a normal Gaussian variable. This introduces some noise in the alignment of the particles.
+
+The ``alignment vector'' $\hat{k}_j$ can be defined in several ways. In \cite{Sknepnek2014}, for example, they define it as a kind of XY model where the particles align to the sum of their neighbors directions. In our model we use that the particles tend to align with the direction of the resultant force $\sum_j \vec{F}_{ij}$.
+
+\subsubsection{Numerical computation}
+
+For all the simulations we use $\tau = \frac{1}{\mu k}$ ($k$ is the elatic constant of the forcing term) as the characteristic time and $\sigma$ (the ``size'' of a cell) as the characteristic distance. The parameters of the system are then:
+
+\begin{enumerate}
+\item{\textbf{N:}} Number of particles in the system.
+\item{\textbf{$\Phi$:}} ``Packing ratio'' of the system, given by $\frac{N \pi \sigma^2}{4 \pi \rho^2}$. This defines the radius $\rho$ of the sphere.
+\item{\textbf{$\nu_0$:}} Active force strength with units of velocity ($\sigma \tau^{-1}$).
+\item{\textbf{$\eta_n$:}} Noise strength with units of $\tau^{-1}$.
+\item{\textbf{$J$:}} Coupling strength with units of $\tau^{-1}$.
+\end{enumerate}
+
+In our computation we use $\Delta t = 0.005 \tau$ and run the simulation for $t=50 \tau$ after a relaxation (to avoid the overlaps due to random initial conditions) that runs $1 \tau$. The choice of $\Delta t$ is done by the fact that we must have, in $\vec{r}$ integration, $\Delta \vec{r} << \sigma$. Using $\nu_0 \in [0.1, 10]$, we will have, at maximum $\vec{r} \approx \nu_0 \Delta t = 0.05 \sigma$.
+
+The integration is done by using a simple Euler-Maruyama method, which requires a small time step to avoid bigger numerical errors. For each time step, after the update of $\vec{r}_i$, we correct the vector to constrain it to the sphere \cite{Sknepnek2014}.
+
+\subsubsection{Spring constant}
+
+As can be seen, the spring constant is not a parameter of our system. This is due to the fact that this would be redundant, implying only a rescale of the parameters and of the characteristic time $\tau$. As $\tau = \frac{1}{\mu k}$ and all the variables (except for the geometrical factor $\Phi$) scale with that, the simulation can include changes in the spring constant by simply scaling the parameters $J$, $\nu_0$ and $\eta_n$ proportinaly. For example, if we want to make the spring twice as strong we need to multiply the parameters by half. We must be aware, however, that the value of $\nu_0$ should not get too high (say in the order of $100$) without changing $\Delta t$.
+
+\subsubsection{Determining the bin size for polar histogram}
+
+For the polar histogram to be built (after rotation when the system reaches stationaty state), we need to choose the appropriate bin size in order to have particles and good statistics in all of them. We define the bin size by considering that for $\Phi=1$ the mean distance between particles is $2\sigma$ and then we must have $\Delta \theta \approx \frac{2\sigma}{R}$. As the mean distances scale approximately with $\Phi^{-1/2}$ then we have $\Delta \theta \approx \frac{4}{\sqrt{N}}$ and the number of bins is then $n_{bins} = \pi \frac{\sqrt{N}}{4}$
+
+\subsection{Navigating through the data}
 
 \bibliography{References.bib}
 

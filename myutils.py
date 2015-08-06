@@ -41,3 +41,37 @@ def calcRotationMatrix(axis_vec, angle):
                 [u*w*(1-cos_theta)-v*sin_theta, v*w*(1-cos_theta)+u*sin_theta, (w**2)*(1-cos_theta)+cos_theta]])
 
     return R
+
+def extractVariablesFromString(string, pattern):
+    """
+    Given a pattern we extract the variables from string.
+    Example:
+    string = bbbb_aa_06_07_xy 
+    patern = bbbb_{0}_{1}_{2}_{3}
+    return {'0':'aa','1':'06','2':'07','3':'xy'}
+    """
+
+    # First we get the places of the variables in the string
+    regPattern = r'\{([^}]+)\}'
+    indexes = re.findall(regPattern, pattern)
+
+    # for each of the places we write a group in the pattern
+    newPattern = pattern
+    for index in indexes:
+        index_string = r'\{%s\}'%index
+        # prepend 'name' to the group name to avoid error in case it is not letter
+        group_regex = r'(?P<name%s>\w+)'%index
+        newPattern = re.sub(index_string, group_regex, newPattern)
+
+    matches = re.match(newPattern,string)
+    matches_dict = matches.groupdict()
+
+    # correct the gourp name and output it
+    out = {}
+    for key in matches_dict:
+        out_key = key[4:]
+        out[out_key] = matches_dict[key]
+
+    return out
+
+    

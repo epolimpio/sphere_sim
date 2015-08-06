@@ -172,9 +172,6 @@ def main(parameters):
     # time counter
     start_time = time.time()
 
-    # number of bins for polar graphs
-    n_bins_polar = 40
-
     # number of particles
     N = int(parameters['N'])
 
@@ -198,6 +195,11 @@ def main(parameters):
     # calculate radius of sphere from the packing parameter
     phi_pack = float(parameters['phi_pack'])
     rho=np.sqrt(N/4/phi_pack) # sphere radius
+
+    # number of bins for polar graphs (we want it even)
+    n_bins_polar = int(np.floor(np.pi*np.sqrt(N)/4))
+    if not n_bins_polar % 2 == 0:
+        n_bins_polar -= 1
 
     # ----- PARAMETERS TO CONTROL ROTATION ----- #
 

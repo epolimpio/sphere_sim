@@ -43,11 +43,6 @@ p_angular=data[1]
 av_dist_pairs=data[2]
 rotated = data[3]
 
-# If rotated, get rotated data
-if rotated:
-    rotated_filename = str(parameters['outfile_postrotation'])
-    data = openPickleFile(rotated_filename, dtime_data)
-
 # parameters
 N = int(parameters['N'])
 n_steps = int(parameters['n_steps'])
@@ -64,8 +59,8 @@ if rotated:
     rotation_time = data[1]
     rot_axis = data[2]
     stress_vs_t = np.array(data[3])
-    force_vs_t = data[4]
-    direction_vs_t = data[5]
+    force_vs_t = np.array(data[4])
+    direction_vs_t = np.array(data[5])
     density_vs_t = data[6]
 
 fig_num = 0
@@ -93,21 +88,66 @@ ax.plot(t, av_dist_pairs)
 plt.xlabel(r'Time ($\tau$)')
 plt.ylabel(r'Average pair distance ($\sigma$)')
 
-# Plot average stress
-fig_num += 1
-fig = plt.figure(fig_num)
-ax = plt.subplot(111)
+if rotated:
+    # Plot average stress
+    fig_num += 1
+    fig = plt.figure(fig_num)
+    ax = plt.subplot(111)
 
-n_bins = stress_vs_t.shape[2]
-bin_edges = np.linspace(0,np.pi,n_bins+1)
-theta = 0.5*(bin_edges[:-1] + bin_edges[1:])
+    n_bins = stress_vs_t.shape[2]
+    bin_edges = np.linspace(0,np.pi,n_bins+1)
+    theta = 0.5*(bin_edges[:-1] + bin_edges[1:])
 
-ax.plot(theta, np.nanmean(stress_vs_t[:,0,:],axis = 0))
-ax.plot(theta, np.nanmean(stress_vs_t[:,1,:],axis = 0))
-ax.plot(theta, np.nanmean(stress_vs_t[:,2,:],axis = 0))
-ax.plot(theta, np.nanmean(stress_vs_t[:,4,:],axis = 0))
-ax.plot(theta, np.nanmean(stress_vs_t[:,5,:],axis = 0))
-ax.plot(theta, np.nanmean(stress_vs_t[:,8,:],axis = 0))
+    ax.plot(theta, np.nanmean(stress_vs_t[:,0,:],axis = 0), label=r'$\Sigma_{rr}$')
+    ax.plot(theta, np.nanmean(stress_vs_t[:,1,:],axis = 0), label=r'$\Sigma_{\theta r}$')
+    ax.plot(theta, np.nanmean(stress_vs_t[:,2,:],axis = 0), label=r'$\Sigma_{\phi r}$')
+    ax.plot(theta, np.nanmean(stress_vs_t[:,4,:],axis = 0), label=r'$\Sigma_{\theta \theta}$')
+    ax.plot(theta, np.nanmean(stress_vs_t[:,5,:],axis = 0), label=r'$\Sigma_{\phi \theta}$')
+    ax.plot(theta, np.nanmean(stress_vs_t[:,8,:],axis = 0), label=r'$\Sigma_{\phi \phi}$')
+    ax.legend()
+    plt.xlabel(r'$\theta$')
+    plt.ylabel(r'Average stress')
 
+    # Plot directions
+    fig_num += 1
+    fig = plt.figure(fig_num)
+    ax = plt.subplot(111)
+
+    ax.plot(theta, np.nanmean(direction_vs_t[:,0,:],axis = 0), label=r'$\hat{n}_r$')
+    ax.plot(theta, np.nanmean(direction_vs_t[:,1,:],axis = 0), label=r'$\hat{n}_{\theta}$')
+    ax.plot(theta, np.nanmean(direction_vs_t[:,2,:],axis = 0), label=r'$\hat{n}_{\phi}$')
+
+    ax.legend()
+    plt.xlabel(r'$\theta$')
+    plt.ylabel(r'Direction')
+
+    # Plot forces
+    fig_num += 1
+    fig = plt.figure(fig_num)
+    ax = plt.subplot(111)
+
+    ax.plot(theta, np.nanmean(force_vs_t[:,0,:],axis = 0), label=r'$\vec{F}_r$')
+    ax.plot(theta, np.nanmean(force_vs_t[:,1,:],axis = 0), label=r'$\vec{F}_{\theta}$')
+    ax.plot(theta, np.nanmean(force_vs_t[:,2,:],axis = 0), label=r'$\vec{F}_{\phi}$')
+
+    ax.legend()
+    plt.xlabel(r'$\theta$')
+    plt.ylabel(r'Force')
+
+    # Plot Density
+    fig_num += 1
+    fig = plt.figure(fig_num)
+    ax = plt.subplot(111)
+
+    dens_dist = np.zeros(n_bins)
+    for dist in density_vs_t:
+        dist = dist.reshape(n_bins)
+        dist[np.isnan(dist)] = 0
+        dens_dist += dist
+
+    ax.plot(theta, dens_dist/len(density_vs_t))
+
+    plt.xlabel(r'$\theta$')
+    plt.ylabel(r'Density')
 
 plt.show()

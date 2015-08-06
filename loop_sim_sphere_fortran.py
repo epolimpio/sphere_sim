@@ -25,9 +25,9 @@ outfile_postrotation = datetime.strftime(tnow,str(parameters['outfile_postrotati
 
 all_N = [50, 100, 200]
 all_phi = [1]
-all_nu = [0.25, 0.5, 1, 2]
-all_J = [0.25, 0.5, 1, 2]
-all_eta = [0.25, 0.5, 1, 2]
+all_nu = [0.5, 1, 2]
+all_J = [0.5, 1, 2]
+all_eta = [0.5, 1, 2]
 
 combinations = []
 for N in all_N:
@@ -38,7 +38,7 @@ for N in all_N:
                     combinations.append((N,phi,nu,J,eta))
 
 # ----- RUN FOR ALL THE PARAMETERS ----- #
-
+repeat = 3
 for N, phi_pack, nu_0, J, eta_n in combinations:
 
     # change the parameters
@@ -48,4 +48,5 @@ for N, phi_pack, nu_0, J, eta_n in combinations:
     parameters['eta_n'] = eta_n
     parameters['phi_pack'] = phi_pack
 
-    sim_sphere_fortran.main(parameters)
+    for i in range(0,repeat):
+        sim_sphere_fortran.main(parameters)
