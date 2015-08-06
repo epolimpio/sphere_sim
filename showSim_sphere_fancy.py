@@ -35,8 +35,8 @@ F_vs_t=data[3]
 N = int(parameters['N'])
 n_steps = int(parameters['n_steps'])
 n_save = int(parameters['n_save'])
-fpacking = float(parameters['fpacking'])
-rho=np.sqrt(N/4/fpacking) # sphere radius 
+phi_pack = float(parameters['phi_pack'])
+rho=np.sqrt(N/4/phi_pack) # sphere radius 
 
 # setup figure, draw background
 def setup_figure():
