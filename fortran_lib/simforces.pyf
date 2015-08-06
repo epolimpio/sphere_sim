@@ -3,14 +3,15 @@
 
 python module simforces ! in 
     interface  ! in :simforces
-        subroutine calc_force_elastic(n,pos,dir_vec,v0,f_tot) ! in :simforces:simforces.f90
+        subroutine calc_force_elastic(n,pos,dir_vec,v0,f_tot,stress) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
             real(kind=8) dimension(3,n),intent(in) :: pos
             real(kind=8) dimension(3,n),intent(in),depend(n) :: dir_vec
             real(kind=8) intent(in) :: v0
             real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
         end subroutine calc_force_elastic
-        subroutine calc_force_hooke(n,n_tri,pos,dir_vec,v0,list,f_tot) ! in :simforces:simforces.f90
+        subroutine calc_force_hooke(n,n_tri,pos,dir_vec,v0,list,f_tot,stress) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
             integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
             real(kind=8) dimension(3,n),intent(in) :: pos
@@ -18,7 +19,14 @@ python module simforces ! in
             real(kind=8) intent(in) :: v0
             integer(kind=4) dimension(n_tri,3),intent(in) :: list
             real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
         end subroutine calc_force_hooke
+        subroutine add_stress(r,rij,fij,stress) ! in :simforces:simforces.f90
+            real(kind=8) dimension(3),intent(in) :: r
+            real(kind=8) dimension(3),intent(in) :: rij
+            real(kind=8) dimension(3),intent(in) :: fij
+            real(kind=8) dimension(9),intent(inout) :: stress
+        end subroutine add_stress
         subroutine get_all_pairs(n_tri,list,pairs) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
             integer(kind=4) dimension(n_tri,3),intent(in) :: list
@@ -32,6 +40,12 @@ python module simforces ! in
             real(kind=8) dimension(3 * n_tri),intent(out),depend(n_tri) :: pairs_dist
             integer(kind=4) dimension(3 * n_tri,2),intent(out),depend(n_tri) :: pairs
         end subroutine calc_pairs_dist
+        subroutine get_spherical_unit_vec(r,e_r,e_phi,e_theta) ! in :simforces:simforces.f90
+            real(kind=8) dimension(3),intent(in) :: r
+            real(kind=8) dimension(3),intent(out) :: e_r
+            real(kind=8) dimension(3),intent(out) :: e_phi
+            real(kind=8) dimension(3),intent(out) :: e_theta
+        end subroutine get_spherical_unit_vec
         function cross(a,b) ! in :simforces:simforces.f90
             integer dimension(3),intent(in) :: a
             integer dimension(3),intent(in) :: b
