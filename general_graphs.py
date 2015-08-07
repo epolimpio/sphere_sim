@@ -5,37 +5,42 @@ from matplotlib import cm
 #import cPickle as pickle # For Python 3 is just pickle
 import pickle
 from datetime import datetime
+from myutils import readConfigFile
+from metadata_lib import findFilesWithParameters
 import sys
+from os.path import isfile, join
 
 
-def openPickleFile(filename, dtime):
-
-    outfile=datetime.strftime(dtime,filename)
+def openPickleFile(filename):
 
     try:
-        data=pickle.load(open(outfile, "rb" ) )
+        data=pickle.load(open(filename, "rb" ) )
     except:
         print("ERROR!")
-        sys.exit("Could not read file. Make sure that the file %s exists." % outfile)
+        sys.exit("Could not read file. Make sure that the file %s exists." % filename)
 
     return data
 
 # Read the date time parameters
 if len(sys.argv)>=2:
     str_date = sys.argv[1]
+    try:
+        yy,mm,dd,h,m,s = [int(x) for x in str_date.split(',')[:6]]
+    except:
+        print("ERROR!")
+        sys.exit("Invalid date. The format must be Y,m,d,H,M,S separated by comma.")
+    
+    analysis_filename = './data/sphere_data_analysis_%Y-%m-%d_%H-%M-%S.p'
+    dtime = datetime(yy,mm,dd,h,m,s)
+    outfile=datetime.strftime(dtime,analysis_filename)
+    data = openPickleFile(outfile)
 else:
-    str_date = input("Insert date, format Y,m,d,H,M,S ->")
-
-try:
-    yy,mm,dd,h,m,s = [int(x) for x in str_date.split(',')[:6]]
-except:
-    print("ERROR!")
-    sys.exit("Invalid date. The format must be Y,m,d,H,M,S separated by comma.")
-
-# Open analysis file
-analysis_filename = './data/sphere_data_analysis_%Y-%m-%d_%H-%M-%S.p'
-dtime_data = datetime(yy,mm,dd,h,m,s)
-data = openPickleFile(analysis_filename, dtime_data)
+    # get the last file with the parameters in parameters.ini
+    parameters = readConfigFile('parameters.ini')
+    metadata = './data/metadata.dat'
+    files, dates = findFilesWithParameters(metadata, parameters)
+    data = openPickleFile(join('./data', files[-1]))
+    dtime = dates[-1]    
 
 # Get the data
 parameters=data[0]
@@ -54,8 +59,8 @@ dt = float(parameters['dt'])
 
 # If rotated, plot rotated data
 if rotated:
-    rotated_filename = str(parameters['outfile_postrotation'])
-    data = openPickleFile(rotated_filename, dtime_data)
+    rotated_filename = datetime.strftime(dtime, str(parameters['outfile_postrotation']))
+    data = openPickleFile(rotated_filename)
     rotation_time = data[1]
     rot_axis = data[2]
     stress_vs_t = np.array(data[3])
@@ -145,7 +150,7 @@ if rotated:
         dist[np.isnan(dist)] = 0
         dens_dist += dist
 
-    ax.plot(theta, dens_dist/len(density_vs_t))
+    ax.plot(theta, dens_dist/len(density_vs_t)/(2*np.pi*rho**2*np.sin(theta)*abs(bin_edges[0]-bin_edges[1])))
 
     plt.xlabel(r'$\theta$')
     plt.ylabel(r'Density')
