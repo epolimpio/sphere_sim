@@ -10,6 +10,7 @@ from fortran_lib import simforces, stripack
 from datetime import datetime
 import time
 import metadata_lib
+import random
 
 # ----- FUNCTIONS ----- #
 
@@ -256,6 +257,10 @@ def main(parameters):
     # relax for 2*tau
     relax_time = int(1 // dt) + 1
 
+    # Number of points to pin
+    N_pin = 3
+    do_not_update_pos = []
+
     # ----- SIMULATION ----- #
     for step in range(0,n_steps+relax_time):
 
@@ -279,6 +284,9 @@ def main(parameters):
             nu=2*np.pi*np.random.rand(N)
             n = np.cos(nu)*get_e_th(r) + np.sin(nu)*get_e_phi(r)
             fixed_list = getDelaunayTrianglesOnSphere(r)
+            # fix N_pin positions
+            do_not_update_pos = random.sample(range(N),N_pin)
+
 
         # caculate total forces (done in FORTRAN)
         if (t<0) or (ftype == 0):
@@ -338,8 +346,9 @@ def main(parameters):
             ps += np.cross(r[:,i],F_tot_plane[:,i])
 
             # Calculate new r
-            dr = dt*F_tot_plane[:,i]
-            r[:,i] = r[:,i] + dr        
+            if not i in do_not_update_pos: 
+                dr = dt*F_tot_plane[:,i]
+                r[:,i] = r[:,i] + dr        
 
         # calculate unit vector <n_i> in the plane at the new position <r_i(t+dt)>
         r = constrain_to_sphere(r, rho)

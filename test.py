@@ -1,6 +1,17 @@
-from myutils import extractVariablesFromString
+import numpy as np
+import cv2
 
-string = 'abcd_04-bb_kc-99-00'
-pattern = 'abcd_{0}-{1}_{2}-{3}-{4}'
+cap = cv2.VideoCapture("D:\\data\\wmv_files\\140314-XY5-H2B dendra- hRSV-RFP.wmv")
 
-extractVariablesFromString(string,pattern)
+while(cap.isOpened()):
+    ret, frame = cap.read()
+
+    #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    gray = frame[:,:,2]
+    cv2.imshow('frame',gray)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

@@ -42,6 +42,8 @@ else:
     data = openPickleFile(join('./data', files[-1]))
     dtime = dates[-1]    
 
+print(dtime)
+
 # Get the data
 parameters=data[0]
 p_angular=data[1]
@@ -133,7 +135,7 @@ if rotated:
 
     ax.plot(theta, np.nanmean(force_vs_t[:,0,:],axis = 0), label=r'$\vec{F}_r$')
     ax.plot(theta, np.nanmean(force_vs_t[:,1,:],axis = 0), label=r'$\vec{F}_{\theta}$')
-    ax.plot(theta, np.nanmean(force_vs_t[:,2,:],axis = 0), label=r'$\vec{F}_{\phi}$')
+    ax.plot(theta, np.nanmean(force_vs_t[:,2,:],axis = 0)/rho/np.sin(theta), label=r'$\vec{F}_{\phi}$')
 
     ax.legend()
     plt.xlabel(r'$\theta$')

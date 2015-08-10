@@ -31,13 +31,14 @@ parameters = readConfigFile('parameters.ini')
 # Now we choose the parameters we want to compare in the graph
 # conditions: ftype, N, phi, eta, nu, J
 conditions = [
-[1, 200, 1, 1, 1, 0.5],
+[1, 200, 1, 1, 0.5, 1],
 [1, 200, 1, 1, 1, 1],
-[1, 200, 1, 1, 1, 2],
+[1, 200, 1, 1, 2, 1],
 ]
 
-variable_compared = 'J'
-legend_name = r'$J$'
+# Here we define the legend style
+variables_legend = ['J', 'N']
+legend_format = r'$1/k = {0}$, $N = {1}$'
 
 # define the parameters of the graphs
 combinations = {}
@@ -97,7 +98,11 @@ for cnt in combinations:
     p_std = p_std - p_mean**2
 
     # Plot the result
-    line, = ax.plot(t, p_mean, label=r'{0} = {1}'.format(legend_name, combination[variable_compared]))
+    legend_data = []
+    for var in variables_legend:
+        legend_data.append(combination[var])
+    legend_str = legend_format.format(*legend_data)
+    line, = ax.plot(t, p_mean, label=legend_str)
     color = line.get_color()
     ax.fill_between(t, p_mean-p_std, p_mean+p_std, facecolor=color, alpha=0.3)
 

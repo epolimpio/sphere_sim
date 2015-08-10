@@ -1,6 +1,8 @@
 import sim_sphere_fortran
 from myutils import readConfigFile
 from datetime import datetime
+import metadata_lib
+import itertools
 
 # ----- PARAMETERS ----- #
 
@@ -23,23 +25,20 @@ outfile_postrotation = datetime.strftime(tnow,str(parameters['outfile_postrotati
 # ----- PARAMETERS TO LOOP ----- #
 # We write the parameters as tuples (N, phi_pack, nu_0, J, eta_n)
 
-all_N = [50, 100, 200]
+all_N = [100]
 all_phi = [1]
-all_nu = [0.5, 1, 2]
-all_J = [0.5, 1, 2]
+all_nu = [0.01, 0.05, 0.1, 0.2, 0.4, 0.5]
+all_J = [0.01, 0.05, 0.1, 0.2, 0.4, 0.5]
 all_eta = [0.5, 1, 2]
+all_anisotropy = [0.5, 1, 2]
+all_max_dist = [0, 2.5, 3]
 
-combinations = []
-for N in all_N:
-    for phi in all_phi:
-        for nu in all_nu:
-            for J in all_J:
-                for eta in all_eta:
-                    combinations.append((N,phi,nu,J,eta))
+all_comb = [all_N, all_phi, all_nu, all_J, all_eta, all_anisotropy, all_max_dist]
+combinations = list(itertools.product(*all_comb))
 
 # ----- RUN FOR ALL THE PARAMETERS ----- #
 repeat = 3
-for N, phi_pack, nu_0, J, eta_n in combinations:
+for N, phi_pack, nu_0, J, eta_n, anis, dist in combinations:
 
     # change the parameters
     parameters['N'] = N
@@ -47,6 +46,12 @@ for N, phi_pack, nu_0, J, eta_n in combinations:
     parameters['J'] = J
     parameters['eta_n'] = eta_n
     parameters['phi_pack'] = phi_pack
+    parameters['fanisotropy'] = anis
+    parameters['max_dist'] = dist 
 
     for i in range(0,repeat):
         sim_sphere_fortran.main(parameters)
+
+print('Updating metadata...')
+metadata_lib.generateMetadata('./data')
+print('Done')
