@@ -1,15 +1,18 @@
+#! /usr/bin/env python3
+
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.tri as mtri
 from scipy.spatial import Delaunay
-#import cPickle as pickle # For Python 3 is just pickle
 import pickle
 from myutils import readConfigFile, calcRotationMatrix
 from fortran_lib import simforces, stripack
 from datetime import datetime
 import time
 import metadata_lib
+import random
+import sys
 
 # ----- FUNCTIONS ----- #
 
@@ -171,12 +174,13 @@ def main(parameters):
     n_steps = parameters['n_steps']
     n_save = parameters['n_save']
     ftype = parameters['ftype']
-    fanisotropy = (parameters['fanisotropy']
+    fanisotropy = parameters['fanisotropy']
     max_dist = parameters['max_dist']
     update_nn = parameters['update_nn']
     chemoatt = parameters['chemoatt']
     rotate_coord = parameters['rotate_coord']
     N_fix = parameters['N_fix']
+    J_chemo = parameters['J_chemo']
 
     # timestep
     dt = parameters['dx']/nu_0
@@ -193,8 +197,14 @@ def main(parameters):
 
     # include the points of chemo attractant
     if chemoatt:
-        chemo_points = eval(parameters['chemo_points'])
-    else
+        chemo_points_temp = eval(parameters['chemo_points'])
+        chemo_points = []
+        for point in chemo_points_temp:
+            if not len(point) == 3:
+                sys.exit('Error in the chemotaxis point')
+            else:
+                chemo_points.append(np.array(point))
+    else:
         chemo_points = []
 
     # number of bins for polar graphs (we want it even)
@@ -216,6 +226,11 @@ def main(parameters):
     # start counters
     count_threshold = 0
     count_interval = 0
+    t_after_rotation = 0
+    # if it will not rotate then initiate variables
+    if not rotate_coord:
+        rotation_time = None
+        rot_axis = None
 
     # ----- INITIALIZE RANDOM POSITION AND ORIENTATION ----- #
 
@@ -246,12 +261,22 @@ def main(parameters):
     F_vs_t=[np.zeros((3,N)),]*total_saved
     n_vs_t=[np.zeros((3,N)),]*total_saved
 
+    # Initialize distributions
+    stress_polar = np.zeros((9, n_bins_polar))
+    force_polar = np.zeros((3, n_bins_polar))
+    direction_polar = np.zeros((3, n_bins_polar))
+    density_polar = np.zeros((1,n_bins_polar))
+
     # parameters data
     p_angular=[np.zeros(3),]*n_steps
     av_pairs_dist = [0.0,]*n_steps
+    res_force = [np.zeros(3),]*n_steps
 
     # relax for tau
     relax_time = int(1 // dt) + 1
+
+    # pin positions
+    do_not_update_pos = []
 
     # ----- SIMULATION ----- #
     for step in range(0,n_steps+relax_time):
@@ -276,6 +301,9 @@ def main(parameters):
             nu=2*np.pi*np.random.rand(N)
             n = np.cos(nu)*get_e_th(r) + np.sin(nu)*get_e_phi(r)
             fixed_list = getDelaunayTrianglesOnSphere(r)
+            if N_fix > 0:
+                # fix N_pin positions
+                do_not_update_pos = random.sample(range(N),N_fix)                
 
         # caculate total forces (done in FORTRAN)
         if (t<0) or (ftype == 0):
@@ -286,13 +314,14 @@ def main(parameters):
             F_tot, stress=simforces.calc_force_hooke(r,n,nu_0, list_+1)
         
         # save data before integration
-        if rotated:
+        if rotated or not rotate_coord:
             # get unit vectors e_phi and e_th
             e_phi = get_e_phi(r)
             e_th = get_e_th(r)
 
             # save the data before integration
-            stress_vs_t[t_after_rotation],bins = makePolarData(r, stress, n_bins_polar)
+            stress_dist,bins = makePolarData(r, stress, n_bins_polar)
+            stress_polar += stress_dist
             
             # get force in spherical coordinates
             force = np.zeros((3,N))
@@ -300,7 +329,8 @@ def main(parameters):
                 force[0,i] = F_tot[:,i].dot(e_r[:,i]) # F_r
                 force[1,i] = F_tot[:,i].dot(e_th[:,i]) # F_th
                 force[2,i] = F_tot[:,i].dot(e_phi[:,i]) # F_phi
-            force_vs_t[t_after_rotation],bins = makePolarData(r, force, n_bins_polar)
+            force_dist,bins = makePolarData(r, force, n_bins_polar)
+            force_polar += force_dist
 
             # get directions in spherical coordinates
             direction = np.zeros((3,N))
@@ -308,10 +338,12 @@ def main(parameters):
                 direction[0,i] = n[:,i].dot(e_r[:,i]) # n_r
                 direction[1,i] = n[:,i].dot(e_th[:,i]) # n_th
                 direction[2,i] = n[:,i].dot(e_phi[:,i]) # n_phi
-            direction_vs_t[t_after_rotation],bins = makePolarData(r, direction, n_bins_polar)            
+            direction_dist,bins = makePolarData(r, direction, n_bins_polar)
+            direction_polar += direction_dist         
 
             # save the number of particles per bin
-            density_vs_t[t_after_rotation], bins = makePolarData(r, np.ones((1,N)), n_bins_polar, 'sum')
+            density_dist, bins = makePolarData(r, np.ones((1,N)), n_bins_polar, 'sum')
+            density_polar += density_dist
 
             t_after_rotation += 1
         
@@ -325,9 +357,16 @@ def main(parameters):
             
             # Calculate rotation interaction
             e_rot=np.cross(n[:,i],f)
-            
+            force_chemo = np.zeros(3)
+            if t >= 0 and chemoatt:
+                for point_chemo in chemo_points:
+                    dir_chemo = r[:,i] - point_chemo
+                    dist_to_chemo = np.sqrt(np.sum(dir_chemo**2))
+                    force_chemo += np.cross(n[:,i],dir_chemo/dist_to_chemo)*np.exp(-dist_to_chemo)
+
             # Calculate new direction n
-            dn=dt*(J*np.inner(e_r[:,i], e_rot) + eta_n*np.random.randn())*np.cross(e_r[:,i],n[:,i])
+            dn=dt*(np.inner(e_r[:,i], J*e_rot + J_chemo*force_chemo) +
+                eta_n*np.random.randn())*np.cross(e_r[:,i],n[:,i])
             n[:,i] = n[:,i] + dn
             n[:,i]=n[:,i]/np.sqrt(np.sum(n[:,i]**2))
 
@@ -335,8 +374,9 @@ def main(parameters):
             ps += np.cross(r[:,i],F_tot_plane[:,i])
 
             # Calculate new r
-            dr = dt*F_tot_plane[:,i]
-            r[:,i] = r[:,i] + dr        
+            if not i in do_not_update_pos:
+                dr = dt*F_tot_plane[:,i]
+                r[:,i] = r[:,i] + dr        
 
         # calculate unit vector <n_i> in the plane at the new position <r_i(t+dt)>
         r = constrain_to_sphere(r, rho)
@@ -364,6 +404,7 @@ def main(parameters):
             # store data for analysis (do not scale with N, so save for all t)
             p_angular[t] = ps
             av_pairs_dist[t] = np.mean(pairs_dist)
+            res_force[t] = np.sum(F_tot, axis=1)
 
         if rotate_coord:
             # Check if is rotating to perform global rotation
@@ -384,20 +425,16 @@ def main(parameters):
                     if count_threshold > max_cnt_thr:
                         print("Rotating at time %d"%(t+1))
                         # rotate the relevant vectors
-                        r, n, e_r = performRotation(ps_av, r, n)
+                        R = calcGlobalRotationMatrix(ps_av)
+                        for i in range(0,N):
+                            r[:,i] = R.dot(r[:,i])
+                            n[:,i] = R.dot(n[:,i])
                         
+                        e_r = get_e_r(r)
+
                         # start variable after rotation
                         rotation_time = t
                         rot_axis = ps_av
-                        t_after_rotation = 0
-                        
-                        # start variables to be saved
-                        t_until_end = n_steps + relax_time - t
-                        stress_vs_t = [np.zeros((9, n_bins_polar)),]*t_until_end
-                        force_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
-                        direction_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
-                        density_vs_t = [np.zeros(n_bins_polar),]*t_until_end
-
                         rotated = True
                     else:
                         count_threshold += 1
@@ -416,8 +453,12 @@ def main(parameters):
     # write data to disk
     pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated], open( outfile_video, "wb" ) )
     pickle.dump( [parameters, p_angular, av_pairs_dist,rotated], open( outfile_analysis, "wb" ) )
-    if rotated:
-        pickle.dump( [parameters, rotation_time, rot_axis, stress_vs_t, force_vs_t, direction_vs_t, density_vs_t, bins], open( outfile_postrotation, "wb" ) )
+
+    if rotated or not rotate_coord:
+        pickle.dump( [parameters, rotation_time, rot_axis,
+            stress_polar/t_after_rotation, force_polar/t_after_rotation,
+            direction_polar/t_after_rotation, density_polar/t_after_rotation, bins],
+            open( outfile_postrotation, "wb" ) )
     print("--- %s seconds ---" % (time.time() - start_time))
 
 if __name__ == "__main__":

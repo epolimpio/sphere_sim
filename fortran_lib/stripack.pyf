@@ -60,8 +60,8 @@ python module stripack ! in
             integer(kind=4) :: lnew
         end subroutine covsph
         subroutine crlist(n,ncol,x,y,z,list,lend,lptr,lnew,ltri,listc,nb,xc,yc,zc,rc,ier) ! in :stripack:stripack.f90
-            integer(kind=4), optional,check(len(x)>=n),depend(x) :: n=len(x)
-            integer(kind=4), optional,check(shape(ltri,1)==ncol),depend(ltri) :: ncol=shape(ltri,1)
+            integer(kind=4), optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+            integer(kind=4), optional,intent(in),check(shape(ltri,1)==ncol),depend(ltri) :: ncol=shape(ltri,1)
             real(kind=8) dimension(n) :: x
             real(kind=8) dimension(n),depend(n) :: y
             real(kind=8) dimension(n),depend(n) :: z
