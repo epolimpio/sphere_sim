@@ -425,7 +425,7 @@ def main(parameters):
             ps_comp = np.average(np.array(p_angular),0)
 
     # write data to disk
-    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated], open( outfile_video, "wb" ) )
+    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated, pairs, do_not_update_pos], open( outfile_video, "wb" ) )
     pickle.dump( [parameters, p_angular, av_pairs_dist,rotated], open( outfile_analysis, "wb" ) )
     if rotated:
         pickle.dump( [parameters, rotation_time, rot_axis, stress_vs_t, force_vs_t, direction_vs_t, density_vs_t, bins], open( outfile_postrotation, "wb" ) )

@@ -4,13 +4,24 @@ from myutils import extractVariablesFromString
 import pickle
 from datetime import datetime
 
-param_names = ['N','nu_0','J','eta_n','phi_pack','ftype','n_steps','dt','n_save','update_nn']
-ftype2_param = ['fanisotropy', 'max_dist']
+def transformParameters(parameters):
+
+    for key in parameters:
+        if key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix']:
+            parameters[key] = int(parameters[key])
+        elif key in ['nu_0','J','eta_n','phi_pack', 'dx', 'fanisotropy', 'max_dist']:
+            parameters[key] = float(parameters[key])
+        elif key in ['update_nn', 'chemoatt', 'rotate_coord']:
+            parameters[key] = int(parameters[key]) == 1
+
+    return parameters
 
 def findFilesWithParameters(metadata, parameters):
 
     f = open(metadata, 'r')
-    lines = f.readlines()[1:]
+    all_lines = f.readlines()
+    heading = all_lines[0]
+    lines = all_lines[1:]
     files = []
     dates = []
     for line in lines:

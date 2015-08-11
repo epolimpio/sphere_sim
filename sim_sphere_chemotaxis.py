@@ -130,22 +130,38 @@ def getDelaunayTrianglesOnSphere(r):
     # Case it fails
     return None
 
-def calcGlobalRotationMatrix(axis, reference = np.array([0,0,1])):
+def performRotation(axis, r, n, point_chemo):
+    """
+    Perform the rotation of the vectors r and n around axis,
+    which is defined, in the main program, by the angular momentum
+    This warraties that the rotation is around z-axis
+    """
 
     # unitary vector of the axis
     L = np.sqrt(np.sum(axis**2,0))
     axis = axis/L
 
-    # unitary vector of reference
-    L = np.sqrt(np.sum(reference**2,0))
-    reference = reference/L    
+    # z direction
+    e_z = np.array([0,0,1])
 
     # fisrt we define the angle of rotation
-    angle = np.arccos(axis.dot(reference))
+    angle = np.arccos(axis.dot(e_z))
 
     # then we define the rotation matrix
-    rot_axis = np.cross(axis, reference)
-    return calcRotationMatrix(rot_axis, angle)
+    rot_axis = np.cross(axis,e_z)
+    R = calcRotationMatrix(rot_axis, angle)
+    
+    # restart e_r
+    N = r.shape[1]
+
+    for i in range(0,N):
+        r[:,i] = R.dot(r[:,i])
+        n[:,i] = R.dot(n[:,i])
+        
+    point_chemo = R.dot(point_chemo)
+    e_r=get_e_r(r)
+
+    return r, n, e_r, point_chemo
 
 # ----- MAIN FUNCTION ----- #
 
@@ -158,28 +174,22 @@ def main(parameters):
     # time counter
     start_time = time.time()
 
-    # transform the parameters properly
-    parameters = metadata_lib.transformParameters(parameters)
-
     # number of particles
-    N = parameters['N']
+    N = int(parameters['N'])
 
     # simulation parameters
-    nu_0 = parameters['nu_0']
-    J = parameters['J']
-    eta_n = parameters['eta_n']
-    n_steps = parameters['n_steps']
-    n_save = parameters['n_save']
-    ftype = parameters['ftype']
-    fanisotropy = (parameters['fanisotropy']
-    max_dist = parameters['max_dist']
-    update_nn = parameters['update_nn']
-    chemoatt = parameters['chemoatt']
-    rotate_coord = parameters['rotate_coord']
-    N_fix = parameters['N_fix']
+    nu_0 = float(parameters['nu_0'])
+    J = float(parameters['J'])
+    eta_n = float(parameters['eta_n'])
+    n_steps = int(parameters['n_steps'])
+    n_save = int(parameters['n_save'])
+    ftype = int(parameters['ftype'])
+    fanisotropy = float(parameters['fanisotropy'])
+    max_dist = float(parameters['max_dist'])
+    update_nn = int(parameters['update_nn']) == 1
 
     # timestep
-    dt = parameters['dx']/nu_0
+    dt = float(parameters['dt'])
 
     # outfile for data
     tnow = datetime.now()
@@ -191,12 +201,6 @@ def main(parameters):
     phi_pack = float(parameters['phi_pack'])
     rho=np.sqrt(N/4/phi_pack) # sphere radius
 
-    # include the points of chemo attractant
-    if chemoatt:
-        chemo_points = eval(parameters['chemo_points'])
-    else
-        chemo_points = []
-
     # number of bins for polar graphs (we want it even)
     n_bins_polar = int(np.floor(np.pi*np.sqrt(N)/4))
     if not n_bins_polar % 2 == 0:
@@ -206,7 +210,7 @@ def main(parameters):
 
     # Internal parameters that define when the system is in the stationary state
     rotated = False
-    # number of frames below the value to trigger rotation
+    # number of times below the value to trigger rotation
     max_cnt_thr = int(0.2 // dt)
     # number of frames without being below the threshold to reset counter
     max_interval = int(0.1 // dt)
@@ -250,7 +254,7 @@ def main(parameters):
     p_angular=[np.zeros(3),]*n_steps
     av_pairs_dist = [0.0,]*n_steps
 
-    # relax for tau
+    # relax for 2*tau
     relax_time = int(1 // dt) + 1
 
     # ----- SIMULATION ----- #
@@ -276,6 +280,7 @@ def main(parameters):
             nu=2*np.pi*np.random.rand(N)
             n = np.cos(nu)*get_e_th(r) + np.sin(nu)*get_e_phi(r)
             fixed_list = getDelaunayTrianglesOnSphere(r)
+            point_chemo = [0,0,rho+0.01]
 
         # caculate total forces (done in FORTRAN)
         if (t<0) or (ftype == 0):
@@ -327,7 +332,13 @@ def main(parameters):
             e_rot=np.cross(n[:,i],f)
             
             # Calculate new direction n
-            dn=dt*(J*np.inner(e_r[:,i], e_rot) + eta_n*np.random.randn())*np.cross(e_r[:,i],n[:,i])
+            if t >= 0:
+                dir_chemo = r[:,i] - point_chemo
+                dist_to_chemo = np.sqrt(np.sum(dir_chemo**2))
+                force_chemo = np.cross(n[:,i],dir_chemo/dist_to_chemo)*np.exp(-dist_to_chemo)
+            else:
+                force_chemo = 0
+            dn=dt*(np.inner(e_r[:,i], J*e_rot + force_chemo) + eta_n*np.random.randn())*np.cross(e_r[:,i],n[:,i])
             n[:,i] = n[:,i] + dn
             n[:,i]=n[:,i]/np.sqrt(np.sum(n[:,i]**2))
 
@@ -365,59 +376,60 @@ def main(parameters):
             p_angular[t] = ps
             av_pairs_dist[t] = np.mean(pairs_dist)
 
-        if rotate_coord:
-            # Check if is rotating to perform global rotation
-            if t>relax_time and not rotated:
-                # rolling average of the angular momentum vector
-                ps_av = np.average(np.array(p_angular[(t-relax_time):t]),0)
-                # difference with the previous average (increment)
-                dif_ps = ps_av - ps_comp
+        # Check if is rotating to perform global rotation
+        if t>relax_time and not rotated:
+            # rolling average of the angular momentum vector
+            ps_av = np.average(np.array(p_angular[(t-relax_time):t]),0)
+            # difference with the previous average (increment)
+            dif_ps = ps_av - ps_comp
 
-                # Check if the normalized size of the increment is below threshold
-                if np.sqrt(np.sum(dif_ps**2))/N/rho/nu_0 < thr_ps_change:
+            # Check if the normalized size of the increment is below threshold
+            if np.sqrt(np.sum(dif_ps**2))/N/rho/nu_0 < thr_ps_change:
 
-                    # reset interval counting 
-                    # (to check how long it will be needed for the next)
-                    count_interval = 0
+                # reset interval counting 
+                # (to check how long it will be needed for the next)
+                count_interval = 0
+                
+                # If it achieved the threshold counting, rotate, else keep counting
+                if count_threshold > max_cnt_thr:
+                    print("Rotating at time %d"%(t+1))
+                    # rotate the relevant vectors
+                    r, n, e_r, point_chemo = performRotation(ps_av, r, n, point_chemo)
                     
-                    # If it achieved the threshold counting, rotate, else keep counting
-                    if count_threshold > max_cnt_thr:
-                        print("Rotating at time %d"%(t+1))
-                        # rotate the relevant vectors
-                        r, n, e_r = performRotation(ps_av, r, n)
-                        
-                        # start variable after rotation
-                        rotation_time = t
-                        rot_axis = ps_av
-                        t_after_rotation = 0
-                        
-                        # start variables to be saved
-                        t_until_end = n_steps + relax_time - t
-                        stress_vs_t = [np.zeros((9, n_bins_polar)),]*t_until_end
-                        force_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
-                        direction_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
-                        density_vs_t = [np.zeros(n_bins_polar),]*t_until_end
 
-                        rotated = True
-                    else:
-                        count_threshold += 1
+                    # start variable after rotation
+                    rotation_time = t
+                    rot_axis = ps_av
+                    t_after_rotation = 0
+                    
+                    # start variables to be saved
+                    t_until_end = n_steps + relax_time - t
+                    stress_vs_t = [np.zeros((9, n_bins_polar)),]*t_until_end
+                    force_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
+                    direction_vs_t = [np.zeros((3, n_bins_polar)),]*t_until_end
+                    density_vs_t = [np.zeros(n_bins_polar),]*t_until_end
+
+                    rotated = True
                 else:
-                    # increase the interval to wait for the next crossing
-                    count_interval += 1
-                    if count_interval > max_interval:
-                        # too many steps with no crossing, reset counting
-                        count_threshold = 0
+                    count_threshold += 1
+            else:
+                # increase the interval to wait for the next crossing
+                count_interval += 1
+                if count_interval > max_interval:
+                    # too many steps with no crossing, reset counting
+                    count_threshold = 0
 
-                ps_comp = ps_av
-            elif t == relax_time:
-                # For the first comparison
-                ps_comp = np.average(np.array(p_angular),0)
+            ps_comp = ps_av
+        elif t == relax_time:
+            # For the first comparison
+            ps_comp = np.average(np.array(p_angular),0)
 
     # write data to disk
     pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated], open( outfile_video, "wb" ) )
     pickle.dump( [parameters, p_angular, av_pairs_dist,rotated], open( outfile_analysis, "wb" ) )
     if rotated:
         pickle.dump( [parameters, rotation_time, rot_axis, stress_vs_t, force_vs_t, direction_vs_t, density_vs_t, bins], open( outfile_postrotation, "wb" ) )
+        print(point_chemo)
     print("--- %s seconds ---" % (time.time() - start_time))
 
 if __name__ == "__main__":
