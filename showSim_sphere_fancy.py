@@ -33,7 +33,7 @@ if len(sys.argv)>=2:
     
     video_filename = './data/sphere_data_video_%Y-%m-%d_%H-%M-%S.p'
     dtime = datetime(yy,mm,dd,h,m,s)
-    outfile=datetime.strftime(dtime,analysis_filename)
+    outfile=datetime.strftime(dtime,video_filename)
     data = openPickleFile(outfile)
 else:
     # get the last file with the parameters in parameters.ini
@@ -62,8 +62,8 @@ rho=np.sqrt(N/4/phi_pack) # sphere radius
 
 # setup the plane of the plot
 x_plane = 0
-y_plane = 2
-z_plane = 1
+y_plane = 1
+z_plane = 2
 # if True, then invert z
 z_inverted = False
 if z_inverted:
