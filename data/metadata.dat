@@ -1,2 +1,0 @@
-nu_0	rotate_coord	phi_pack	update_nn	outfile_analysis	J	n_save	n_steps	outfile_postrotation	max_dist	J_chemo	eta_n	ftype	chemo_points	dx	outfile_video	fanisotropy	N	chemoatt	N_fix	date_string	filename
-0.1	0	1.0	0	./data/sphere_data_analysis_%Y-%m-%d_%H-%M-%S.p	0.1	50	10000	./data/sphere_data_rotated_%Y-%m-%d_%H-%M-%S.p	0.0	1.0	0.1	1	[[0,0,rho+0.1]]	0.005	./data/sphere_data_video_%Y-%m-%d_%H-%M-%S.p	1.0	100	0	0	2015,08,12,15,04,42	sphere_data_analysis_2015-08-12_15-04-42.p

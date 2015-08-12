@@ -39,8 +39,11 @@ else:
     parameters = readConfigFile('parameters.ini')
     metadata = './data/metadata.dat'
     files, dates = findFilesWithParameters(metadata, parameters)
-    data = openPickleFile(join('./data', files[-1]))
-    dtime = dates[-1]    
+    if files:
+        data = openPickleFile(join('./data', files[-1]))
+        dtime = dates[-1]
+    else:
+        sys.exit("No file found with the parameters in parameters.ini")
 
 print(dtime)
 
@@ -49,7 +52,9 @@ parameters=transformParameters(data[0])
 p_angular=data[1]
 av_dist_pairs=data[2]
 res_force = np.array(data[3])
-rotated = data[4]
+chemo_points = data[4]
+print(chemo_points)
+rotated = data[5]
 
 # parameters
 N = parameters['N']

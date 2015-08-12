@@ -148,7 +148,7 @@ For all the simulations we use $\tau = \frac{1}{\mu k}$ ($k$ is the elatic const
 \item{\textbf{$J$:}} Coupling strength with units of $\tau^{-1}$.
 \end{enumerate}
 
-In our computation we use $\Delta x = 0.005 \sigma$ ($\Delta t = \Delta x/\nu_0$) and run the simulation for $t=50 \tau$ after a relaxation (to avoid the overlaps due to random initial conditions) that runs for $1 \tau$. The choice of $\Delta x$ is done by the fact that we must have, in $\vec{r}$ integration, $\Delta \vec{r} << \sigma$. Care must be taken for extremely low values of $\nu_0$.
+In our computation we use $\Delta x = 0.005 \sigma$ ($\Delta t = \Delta x/\nu_0$) and run the simulation for $t=50 \tau$ after a relaxation (to avoid the overlaps due to random initial conditions) that runs for the equivalent of $2 \sigma$ or  $2/\Delta x \tau$. The choice of $\Delta x$ is done by the fact that we must have, in $\vec{r}$ integration, $\Delta \vec{r} << \sigma$. Care must be taken for extremely low values of $\nu_0$.
 
 The integration is done by using a simple Euler-Maruyama method, which requires a small time step to avoid bigger numerical errors. For each time step, after the update of $\vec{r}_i$, we correct the vector to constrain it to the sphere \cite{Sknepnek2014}.
 
@@ -199,10 +199,10 @@ fanisotropy = 1
 max_dist = 0
 
 # Number of points to fix (randomly chosen)
-N_fix = 0
+N_fix = 3
 
 # Include chemoattractant? (0: no, 1: yes)
-chemoatt = 1
+chemoatt = 0
 # If yes, choose the point(s).
 # Ex.: chemo_points = [[0, 0, rho+2]] -> one point: x, y = 0, z = sphere radius(rho) + 2*sigma
 # Ex.: chemo_points = [[0, 0, rho],[-1, 2*rho, 3]] -> two points
@@ -210,16 +210,18 @@ chemo_points = [[0,0,rho+0.1]]
 # chemotaxis direction 'coupling' term
 J_chemo = 1
 
+# steps before starting saving the distributions
+n_before = 1000
 # Rotate coordinates according to the axis of rotation? (0: no, 1: yes)
-# If so, the polar distributions will only be calculated after rotation 
+# If so, they will be rotating at n_save_dist
 rotate_coord = 0
 
 # Simulation Parameters
 # Number of steps
-n_steps = 10000
+n_steps = 5000
 # timestep max displacement (in sigma, dt = dx/nu_0)
 dx = 0.005
-# save data every n_save steps
+# save data every n_save steps for the video output
 n_save = 50
 
 # outfile for data (if changed you have to change the reading scripts also)

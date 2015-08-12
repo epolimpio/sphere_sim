@@ -11,7 +11,7 @@ def transformParameters(parameters):
     Transform the parameters from string to the right data type
     """
     for key in parameters:
-        if key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix', 'update_nn', 'chemoatt', 'rotate_coord']:
+        if key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix', 'update_nn', 'chemoatt', 'rotate_coord', 'n_before']:
             parameters[key] = int(parameters[key])
         elif key in ['nu_0','J','eta_n','phi_pack', 'dx', 'fanisotropy', 'max_dist', 'J_chemo']:
             parameters[key] = float(parameters[key])
@@ -48,7 +48,7 @@ def findFilesWithParameters(metadata, parameters):
         # compare all the comp_keys
         comp_keys = ['N', 'n_steps', 'n_save', 'ftype', 'N_fix', 
                 'update_nn', 'chemoatt', 'rotate_coord',
-                'nu_0','J','eta_n','phi_pack', 'dx',
+                'nu_0','J','eta_n','phi_pack', 'dx', 'n_before',
                 'outfile_video','outfile_analysis','outfile_postrotation']
         match = True
         for key in comp_keys:

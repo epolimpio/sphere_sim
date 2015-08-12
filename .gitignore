@@ -99,7 +99,12 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Data files
 *.p
+*.dat
+
+# Tex files
 *.bbl
 doc/README.aux
 *.blg

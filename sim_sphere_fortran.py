@@ -183,7 +183,8 @@ def main(parameters):
     J_chemo = parameters['J_chemo']
 
     # timestep
-    dt = parameters['dx']/nu_0
+    dx = parameters['dx']
+    dt = dx/nu_0
 
     # outfile for data
     tnow = datetime.now()
@@ -216,21 +217,14 @@ def main(parameters):
 
     # Internal parameters that define when the system is in the stationary state
     rotated = False
-    # number of frames below the value to trigger rotation
-    max_cnt_thr = int(0.2 // dt)
-    # number of frames without being below the threshold to reset counter
-    max_interval = int(0.1 // dt)
-    # threshold of the norm of the change in angular momentum between frames
-    # counting starts for variation below this value
-    thr_ps_change = 5e-3*dt
-    # start counters
-    count_threshold = 0
-    count_interval = 0
-    t_after_rotation = 0
+    n_before = parameters['n_before']
+
     # if it will not rotate then initiate variables
     if not rotate_coord:
         rotation_time = None
         rot_axis = None
+
+    t_after_rotation = 0
 
     # ----- INITIALIZE RANDOM POSITION AND ORIENTATION ----- #
 
@@ -273,7 +267,7 @@ def main(parameters):
     res_force = [np.zeros(3),]*n_steps
 
     # relax for tau
-    relax_time = int(1 // dt) + 1
+    relax_time = int(2 // dx) + 1
 
     # initial neighbors list
     list_ = getDelaunayTrianglesOnSphere(r)
@@ -317,7 +311,7 @@ def main(parameters):
             F_tot, stress=simforces.calc_force_elastic(r,n,nu_0)
         
         # save data before integration
-        if rotated or not rotate_coord:
+        if t > n_before:
             # get unit vectors e_phi and e_th
             e_phi = get_e_phi(r)
             e_th = get_e_th(r)
@@ -409,53 +403,32 @@ def main(parameters):
             av_pairs_dist[t] = np.mean(pairs_dist)
             res_force[t] = np.sum(F_tot, axis=1)
 
+        # Rotate at the determined step
         if rotate_coord:
-            # Check if is rotating to perform global rotation
-            if t>relax_time and not rotated:
-                # rolling average of the angular momentum vector
+            if t==n_before and not rotated:
+                # we rotate around the average angular momentum (averaged for time tau)
                 ps_av = np.average(np.array(p_angular[(t-relax_time):t]),0)
-                # difference with the previous average (increment)
-                dif_ps = ps_av - ps_comp
+                print("Rotating at step %d"%(t+1))
+                # rotate the relevant vectors
+                R = calcGlobalRotationMatrix(ps_av)
+                for i in range(0,N):
+                    r[:,i] = R.dot(r[:,i])
+                    n[:,i] = R.dot(n[:,i])
+                
+                e_r = get_e_r(r)
 
-                # Check if the normalized size of the increment is below threshold
-                if np.sqrt(np.sum(dif_ps**2))/N/rho/nu_0 < thr_ps_change:
+                if chemoatt:
+                    for point_chemo in chemo_points:
+                        point_chemo = R.dot(point_chemo)
 
-                    # reset interval counting 
-                    # (to check how long it will be needed for the next)
-                    count_interval = 0
-                    
-                    # If it achieved the threshold counting, rotate, else keep counting
-                    if count_threshold > max_cnt_thr:
-                        print("Rotating at time %d"%(t+1))
-                        # rotate the relevant vectors
-                        R = calcGlobalRotationMatrix(ps_av)
-                        for i in range(0,N):
-                            r[:,i] = R.dot(r[:,i])
-                            n[:,i] = R.dot(n[:,i])
-                        
-                        e_r = get_e_r(r)
-
-                        # start variable after rotation
-                        rotation_time = t
-                        rot_axis = ps_av
-                        rotated = True
-                    else:
-                        count_threshold += 1
-                else:
-                    # increase the interval to wait for the next crossing
-                    count_interval += 1
-                    if count_interval > max_interval:
-                        # too many steps with no crossing, reset counting
-                        count_threshold = 0
-
-                ps_comp = ps_av
-            elif t == relax_time:
-                # For the first comparison
-                ps_comp = np.average(np.array(p_angular),0)
+                # start variable after rotation
+                rotation_time = t
+                rot_axis = ps_av
+                rotated = True
 
     # write data to disk
     pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated,pairs], open( outfile_video, "wb" ) )
-    pickle.dump( [parameters, p_angular, av_pairs_dist, res_force, rotated], open( outfile_analysis, "wb" ) )
+    pickle.dump( [parameters, p_angular, av_pairs_dist, res_force, chemo_points, rotated], open( outfile_analysis, "wb" ) )
 
     if rotated or not rotate_coord:
         pickle.dump( [parameters, rotation_time, rot_axis,

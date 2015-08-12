@@ -40,7 +40,10 @@ else:
     parameters = readConfigFile('parameters.ini')
     metadata = './data/metadata.dat'
     files, dates = findFilesWithParameters(metadata, parameters)
-    dtime = dates[-1]
+    if files:
+        dtime = dates[-1]
+    else:
+        sys.exit("No file found with the parameters in parameters.ini")
     data = openPickleFile(datetime.strftime(dtime,parameters['outfile_video']))
 
 parameters=transformParameters(data[0])
@@ -59,8 +62,13 @@ rho=np.sqrt(N/4/phi_pack) # sphere radius
 
 # setup the plane of the plot
 x_plane = 0
-y_plane = 1
-z_plane = 2
+y_plane = 2
+z_plane = 1
+# if True, then invert z
+z_inverted = False
+if z_inverted:
+    for i in range(0,len(r_vs_t)):
+        r_vs_t[i][z_plane,:] = -r_vs_t[i][z_plane,:]
 
 # setup figure, draw background
 def setup_figure():
@@ -91,6 +99,7 @@ def animate(f):
     n=n_vs_t[f]
     if update_nn:
         pairs = simforces.get_all_pairs(getDelaunayTrianglesOnSphere(r)+1)
+    
 
     indsort=np.argsort(r[z_plane,:])
     
