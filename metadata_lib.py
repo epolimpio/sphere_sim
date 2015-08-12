@@ -7,58 +7,64 @@ import pickle
 from datetime import datetime
 
 def transformParameters(parameters):
-
+    """
+    Transform the parameters from string to the right data type
+    """
     for key in parameters:
-        if key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix']:
+        if key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix', 'update_nn', 'chemoatt', 'rotate_coord']:
             parameters[key] = int(parameters[key])
         elif key in ['nu_0','J','eta_n','phi_pack', 'dx', 'fanisotropy', 'max_dist', 'J_chemo']:
             parameters[key] = float(parameters[key])
-        elif key in ['update_nn', 'chemoatt', 'rotate_coord']:
-            parameters[key] = int(parameters[key]) == 1
 
     return parameters
 
 def findFilesWithParameters(metadata, parameters):
-
+    """
+    Find all files included in the metadata with the specified parameters
+    """
+    # First we transforme the parameters
     parameters = transformParameters(parameters)
+
+    # then read the metadata to get what is in there
     f = open(metadata, 'r')
     all_lines = f.readlines()
+    # the heading gives the dictionary keys
     heading = []
     for key in all_lines[0].split('\t')[:-2]:
         heading.append(key.strip())
     lines = all_lines[1:]
+    # start empty output variables
     files = []
     dates = []
+    # run through all the entries in metadata
     for line in lines:
+        # reconstruct the parameters file
         param_comp = {}
         all_data = line.split('\t')
         for i, data in enumerate(all_data[:-2]):
             param_comp[heading[i]] = data.strip()
-
+        param_comp = transformParameters(param_comp)
+        
+        # compare all the comp_keys
+        comp_keys = ['N', 'n_steps', 'n_save', 'ftype', 'N_fix', 
+                'update_nn', 'chemoatt', 'rotate_coord',
+                'nu_0','J','eta_n','phi_pack', 'dx',
+                'outfile_video','outfile_analysis','outfile_postrotation']
         match = True
-        for key in ['N', 'n_steps', 'n_save', 'ftype', 'N_fix']:
-            match = match and int(param_comp[key]) == parameters[key]
-
-        for key in ['nu_0','J','eta_n','phi_pack', 'dx']:
-            match = match and float(param_comp[key]) == parameters[key]
-
-        for key in ['outfile_video','outfile_analysis','outfile_postrotation']:
+        for key in comp_keys:
             match = match and param_comp[key] == parameters[key]
 
-        for key in ['update_nn', 'chemoatt', 'rotate_coord']:
-            if parameters[key]:
-                match = match and param_comp[key].lower() == 'true'
-            else:
-                match = match and param_comp[key].lower() == 'false'
-
-        if parameters['chemoatt']:
+        # If chemoatt, then compare the chemotaxis parameters
+        if parameters['chemoatt'] == 1:
             match = match and param_comp['chemo_points'] == parameters['chemo_points']
-            match = match and float(param_comp['J_chemo']) == parameters['J_chemo']
+            match = match and param_comp['J_chemo'] == parameters['J_chemo']
 
+        # If using asymmetric force, compare these values 
         if parameters['ftype'] == 2:
-            match = match and float(param_comp['fanisotropy']) == parameters['fanisotropy']
-            match = match and float(param_comp['max_dist']) == parameters['max_dist']
+            match = match and param_comp['fanisotropy'] == parameters['fanisotropy']
+            match = match and param_comp['max_dist'] == parameters['max_dist']
 
+        # Add to the output if match
         if match:
             files.append(all_data[-1].strip())
             date_list = [int(x) for x in all_data[-2].strip().split(',')]
@@ -69,7 +75,11 @@ def findFilesWithParameters(metadata, parameters):
 
 def generateMetadata(path, parameters_file = './parameters.ini'):
     """
-    Generate the metadata for reference of the parameters used (database)
+    Generate the metadata for reference of the parameters used.
+    This avoid the open and read of all the files while looking
+    for a specific run.
+    It also provides a way to navigate through the parameters space
+    using Excel, for example (open tha .dat file on it).
     """
     # parameters
     file_start = 'sphere_data_analysis_'

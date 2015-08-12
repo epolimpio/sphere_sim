@@ -176,9 +176,9 @@ def main(parameters):
     ftype = parameters['ftype']
     fanisotropy = parameters['fanisotropy']
     max_dist = parameters['max_dist']
-    update_nn = parameters['update_nn']
-    chemoatt = parameters['chemoatt']
-    rotate_coord = parameters['rotate_coord']
+    update_nn = parameters['update_nn'] == 1
+    chemoatt = parameters['chemoatt'] == 1
+    rotate_coord = parameters['rotate_coord'] == 1
     N_fix = parameters['N_fix']
     J_chemo = parameters['J_chemo']
 
@@ -275,6 +275,9 @@ def main(parameters):
     # relax for tau
     relax_time = int(1 // dt) + 1
 
+    # initial neighbors list
+    list_ = getDelaunayTrianglesOnSphere(r)
+
     # pin positions
     do_not_update_pos = []
 
@@ -306,12 +309,12 @@ def main(parameters):
                 do_not_update_pos = random.sample(range(N),N_fix)                
 
         # caculate total forces (done in FORTRAN)
-        if (t<0) or (ftype == 0):
-            F_tot, stress=simforces.calc_force_elastic(r,n,nu_0)
+        if (ftype == 1):
+            F_tot, stress=simforces.calc_force_hooke(r,n,nu_0, list_+1)
         elif (ftype == 2):
             F_tot, stress=simforces.calc_force_hooke_break(r,n,nu_0, fanisotropy, max_dist, list_+1)
         else:
-            F_tot, stress=simforces.calc_force_hooke(r,n,nu_0, list_+1)
+            F_tot, stress=simforces.calc_force_elastic(r,n,nu_0)
         
         # save data before integration
         if rotated or not rotate_coord:
@@ -360,7 +363,7 @@ def main(parameters):
             force_chemo = np.zeros(3)
             if t >= 0 and chemoatt:
                 for point_chemo in chemo_points:
-                    dir_chemo = r[:,i] - point_chemo
+                    dir_chemo = point_chemo - r[:,i]
                     dist_to_chemo = np.sqrt(np.sum(dir_chemo**2))
                     force_chemo += np.cross(n[:,i],dir_chemo/dist_to_chemo)*np.exp(-dist_to_chemo)
 
@@ -451,8 +454,8 @@ def main(parameters):
                 ps_comp = np.average(np.array(p_angular),0)
 
     # write data to disk
-    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated], open( outfile_video, "wb" ) )
-    pickle.dump( [parameters, p_angular, av_pairs_dist,rotated], open( outfile_analysis, "wb" ) )
+    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated,pairs], open( outfile_video, "wb" ) )
+    pickle.dump( [parameters, p_angular, av_pairs_dist, res_force, rotated], open( outfile_analysis, "wb" ) )
 
     if rotated or not rotate_coord:
         pickle.dump( [parameters, rotation_time, rot_axis,

@@ -148,7 +148,7 @@ For all the simulations we use $\tau = \frac{1}{\mu k}$ ($k$ is the elatic const
 \item{\textbf{$J$:}} Coupling strength with units of $\tau^{-1}$.
 \end{enumerate}
 
-In our computation we use $\Delta t = 0.005 \tau$ and run the simulation for $t=50 \tau$ after a relaxation (to avoid the overlaps due to random initial conditions) that runs $1 \tau$. The choice of $\Delta t$ is done by the fact that we must have, in $\vec{r}$ integration, $\Delta \vec{r} << \sigma$. Using $\nu_0 \in [0.1, 10]$, we will have, at maximum $\vec{r} \approx \nu_0 \Delta t = 0.05 \sigma$.
+In our computation we use $\Delta x = 0.005 \sigma$ ($\Delta t = \Delta x/\nu_0$) and run the simulation for $t=50 \tau$ after a relaxation (to avoid the overlaps due to random initial conditions) that runs for $1 \tau$. The choice of $\Delta x$ is done by the fact that we must have, in $\vec{r}$ integration, $\Delta \vec{r} << \sigma$. Care must be taken for extremely low values of $\nu_0$.
 
 The integration is done by using a simple Euler-Maruyama method, which requires a small time step to avoid bigger numerical errors. For each time step, after the update of $\vec{r}_i$, we correct the vector to constrain it to the sphere \cite{Sknepnek2014}.
 
@@ -160,7 +160,83 @@ As can be seen, the spring constant is not a parameter of our system. This is du
 
 For the polar histogram to be built (after rotation when the system reaches stationaty state), we need to choose the appropriate bin size in order to have particles and good statistics in all of them. We define the bin size by considering that for $\Phi=1$ the mean distance between particles is $2\sigma$ and then we must have $\Delta \theta \approx \frac{2\sigma}{R}$. As the mean distances scale approximately with $\Phi^{-1/2}$ then we have $\Delta \theta \approx \frac{4}{\sqrt{N}}$ and the number of bins is then $n_{bins} = \pi \frac{\sqrt{N}}{4}$
 
-\subsection{Navigating through the data}
+\subsection{Using the code}
+
+There are essentially two forms to run the code, one that runs for a fixed set of parameters \path{sim_sphere_fortran.py} and other that calls this same file changing the set of parameters \path{loop_sim_sphere_fortran.py}. The parameters are set in the file \path{parameters.ini}.
+
+\subsubsection{Configuration file}
+
+You should set all the parameters in the file \path{parameters.ini}, which is contained below. The lines starting with \path{`#'} are comments, and the file is meant to be self explanatory. This file is read according to the function \path{readConfigFile} in the file \path{myutils.py}.
+
+\begin{verbatim}
+# number of particles
+N = 100
+
+# Force Parameters
+# active force constant
+nu_0 = 0.1
+# spring 'coupling' term
+J = 0.1
+# noise strength
+eta_n = 0.1
+
+# Packing fraction (geometrical parameter)
+phi_pack = 1
+
+# Update Neighbors every time step? (0: no, 1: yes)
+update_nn = 0
+
+# Force type
+# 0: repulsive only
+# 1: Hooke's Law
+# 2: Hooke's Law with anisotrpy and bond breaking
+ftype = 1
+
+# If using ftype=2 set the parameters below
+# Anisotropy of the force (k_pull/k_push)
+fanisotropy = 1
+# maximum distance between centers for the breaking of the bond (in sigma, must be above 2)
+max_dist = 0
+
+# Number of points to fix (randomly chosen)
+N_fix = 0
+
+# Include chemoattractant? (0: no, 1: yes)
+chemoatt = 1
+# If yes, choose the point(s).
+# Ex.: chemo_points = [[0, 0, rho+2]] -> one point: x, y = 0, z = sphere radius(rho) + 2*sigma
+# Ex.: chemo_points = [[0, 0, rho],[-1, 2*rho, 3]] -> two points
+chemo_points = [[0,0,rho+0.1]]
+# chemotaxis direction 'coupling' term
+J_chemo = 1
+
+# Rotate coordinates according to the axis of rotation? (0: no, 1: yes)
+# If so, the polar distributions will only be calculated after rotation 
+rotate_coord = 0
+
+# Simulation Parameters
+# Number of steps
+n_steps = 10000
+# timestep max displacement (in sigma, dt = dx/nu_0)
+dx = 0.005
+# save data every n_save steps
+n_save = 50
+
+# outfile for data (if changed you have to change the reading scripts also)
+outfile_video = ./data/sphere_data_video_%Y-%m-%d_%H-%M-%S.p
+outfile_analysis = ./data/sphere_data_analysis_%Y-%m-%d_%H-%M-%S.p
+outfile_postrotation = ./data/sphere_data_rotated_%Y-%m-%d_%H-%M-%S.p
+\end{verbatim}
+
+\subsubsection{Running the code}
+
+
+
+\subsubsection{Navigating through the data}
+
+Each time the simulation at \path{sim_sphere_fortran.py} runs, it generates a new file at the folder data and update (or generate) a file called \path{matadata.dat}. This file is used to navigate through the parameters of the runs without opening the files. It allows both the graphing scripts to get all files with a determined set of parameters and also allows the user to open this file in Excel (tab delimited file) and navigate manually through the parameters and run the appropriate analysis by using its \path{date_string} reference. The code referent to the metadata is contained in the file \path{metadata_lib.py}.
+
+
 
 \bibliography{References.bib}
 

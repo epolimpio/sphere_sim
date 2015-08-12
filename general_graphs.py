@@ -6,7 +6,7 @@ from matplotlib import cm
 import pickle
 from datetime import datetime
 from myutils import readConfigFile
-from metadata_lib import findFilesWithParameters
+from metadata_lib import findFilesWithParameters, transformParameters
 import sys
 from os.path import isfile, join
 
@@ -45,30 +45,32 @@ else:
 print(dtime)
 
 # Get the data
-parameters=data[0]
+parameters=transformParameters(data[0])
 p_angular=data[1]
 av_dist_pairs=data[2]
-rotated = data[3]
+res_force = np.array(data[3])
+rotated = data[4]
 
 # parameters
-N = int(parameters['N'])
-n_steps = int(parameters['n_steps'])
-n_save = int(parameters['n_save'])
-phi_pack = float(parameters['phi_pack'])
+N = parameters['N']
+n_steps = parameters['n_steps']
+n_save = parameters['n_save']
+phi_pack = parameters['phi_pack']
 rho=np.sqrt(N/4/phi_pack) # sphere radius
-nu_0 = float(parameters['nu_0'])
-dt = float(parameters['dt'])
+nu_0 = parameters['nu_0']
+dt = parameters['dx']/nu_0
+rotate_coord = parameters['rotate_coord'] == 1
 
 # If rotated, plot rotated data
-if rotated:
+if rotated or not rotate_coord:
     rotated_filename = datetime.strftime(dtime, str(parameters['outfile_postrotation']))
     data = openPickleFile(rotated_filename)
     rotation_time = data[1]
     rot_axis = data[2]
-    stress_vs_t = np.array(data[3])
-    force_vs_t = np.array(data[4])
-    direction_vs_t = np.array(data[5])
-    density_vs_t = data[6]
+    stress_polar = data[3]
+    force_polar = data[4]
+    direction_polar = data[5]
+    density_polar = data[6]
 
 fig_num = 0
 
@@ -95,22 +97,31 @@ ax.plot(t, av_dist_pairs)
 plt.xlabel(r'Time ($\tau$)')
 plt.ylabel(r'Average pair distance ($\sigma$)')
 
-if rotated:
+# Plot Resulting force
+fig_num += 1
+fig = plt.figure(fig_num)
+ax = plt.subplot(111)
+
+ax.plot(t, res_force)
+ax.legend([r'$F_x$', r'$F_y$', r'$F_z$'])
+plt.xlabel(r'Time ($\tau$)')
+plt.ylabel(r'Resulting velocity ($\sigma \tau^{-1}$)')
+
+if rotated or not rotate_coord:
     # Plot average stress
     fig_num += 1
     fig = plt.figure(fig_num)
     ax = plt.subplot(111)
 
-    n_bins = stress_vs_t.shape[2]
+    n_bins = stress_polar.shape[1]
     bin_edges = np.linspace(0,np.pi,n_bins+1)
     theta = 0.5*(bin_edges[:-1] + bin_edges[1:])
-
-    ax.plot(theta, np.nanmean(stress_vs_t[:,0,:],axis = 0), label=r'$\Sigma_{rr}$')
-    ax.plot(theta, np.nanmean(stress_vs_t[:,1,:],axis = 0), label=r'$\Sigma_{\theta r}$')
-    ax.plot(theta, np.nanmean(stress_vs_t[:,2,:],axis = 0), label=r'$\Sigma_{\phi r}$')
-    ax.plot(theta, np.nanmean(stress_vs_t[:,4,:],axis = 0), label=r'$\Sigma_{\theta \theta}$')
-    ax.plot(theta, np.nanmean(stress_vs_t[:,5,:],axis = 0), label=r'$\Sigma_{\phi \theta}$')
-    ax.plot(theta, np.nanmean(stress_vs_t[:,8,:],axis = 0), label=r'$\Sigma_{\phi \phi}$')
+    ax.plot(theta, stress_polar[0,:], label=r'$\Sigma_{rr}$')
+    ax.plot(theta, stress_polar[1,:], label=r'$\Sigma_{\theta r}$')
+    ax.plot(theta, stress_polar[2,:], label=r'$\Sigma_{\phi r}$')
+    ax.plot(theta, stress_polar[4,:], label=r'$\Sigma_{\theta \theta}$')
+    ax.plot(theta, stress_polar[5,:], label=r'$\Sigma_{\phi \theta}$')
+    ax.plot(theta, stress_polar[8,:], label=r'$\Sigma_{\phi \phi}$')
     ax.legend()
     plt.xlabel(r'$\theta$')
     plt.ylabel(r'Average stress')
@@ -120,9 +131,9 @@ if rotated:
     fig = plt.figure(fig_num)
     ax = plt.subplot(111)
 
-    ax.plot(theta, np.nanmean(direction_vs_t[:,0,:],axis = 0), label=r'$\hat{n}_r$')
-    ax.plot(theta, np.nanmean(direction_vs_t[:,1,:],axis = 0), label=r'$\hat{n}_{\theta}$')
-    ax.plot(theta, np.nanmean(direction_vs_t[:,2,:],axis = 0), label=r'$\hat{n}_{\phi}$')
+    ax.plot(theta, direction_polar[0,:], label=r'$\hat{n}_r$')
+    ax.plot(theta, direction_polar[1,:], label=r'$\hat{n}_{\theta}$')
+    ax.plot(theta, direction_polar[2,:], label=r'$\hat{n}_{\phi}$')
 
     ax.legend()
     plt.xlabel(r'$\theta$')
@@ -133,9 +144,9 @@ if rotated:
     fig = plt.figure(fig_num)
     ax = plt.subplot(111)
 
-    ax.plot(theta, np.nanmean(force_vs_t[:,0,:],axis = 0), label=r'$\vec{F}_r$')
-    ax.plot(theta, np.nanmean(force_vs_t[:,1,:],axis = 0), label=r'$\vec{F}_{\theta}$')
-    ax.plot(theta, np.nanmean(force_vs_t[:,2,:],axis = 0)/rho/np.sin(theta), label=r'$\vec{F}_{\phi}$')
+    ax.plot(theta, force_polar[0,:], label=r'$\vec{F}_r$')
+    ax.plot(theta, force_polar[1,:], label=r'$\vec{F}_{\theta}$')
+    ax.plot(theta, force_polar[2,:]/rho/np.sin(theta), label=r'$\vec{F}_{\phi}$')
 
     ax.legend()
     plt.xlabel(r'$\theta$')
@@ -146,13 +157,9 @@ if rotated:
     fig = plt.figure(fig_num)
     ax = plt.subplot(111)
 
-    dens_dist = np.zeros(n_bins)
-    for dist in density_vs_t:
-        dist = dist.reshape(n_bins)
-        dist[np.isnan(dist)] = 0
-        dens_dist += dist
-
-    ax.plot(theta, dens_dist/len(density_vs_t)/(2*np.pi*rho**2*np.sin(theta)*abs(bin_edges[0]-bin_edges[1])))
+    density_polar = np.reshape(density_polar, n_bins)
+    density_polar[np.isnan(density_polar)] = 0
+    ax.plot(theta, density_polar/(2*np.pi*rho**2*np.sin(theta)*abs(bin_edges[0]-bin_edges[1])))
 
     plt.xlabel(r'$\theta$')
     plt.ylabel(r'Density')
