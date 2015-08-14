@@ -11,19 +11,24 @@ parameters = readConfigFile('parameters.ini')
 all_N = [100]
 all_phi = [1]
 all_nu = [1]
-all_J = [0.01, 0.05, 0.1, 0.2, 0.4, 0.5, 1, 2]
-all_eta = [0.1, 0.5, 1, 2]
+all_J = [0.01, 0.1, 0.5, 1, 2]
+all_eta = [0.1, 0.5, 1]
 all_anisotropy = [1]
 all_max_dist = [0]
-all_update_nn = [0, 1]
+all_update_nn = [1]
+all_N_fix = [0]
+all_chemoatt = [0, 1]
 
-all_comb = [all_N, all_phi, all_nu, all_J, all_eta, all_anisotropy, all_max_dist, all_update_nn]
+all_comb = [all_N, all_phi, all_nu, all_J, all_eta, 
+            all_anisotropy, all_max_dist, all_update_nn,
+            all_N_fix, all_chemoatt]
 combinations = list(itertools.product(*all_comb))
 
 # ----- RUN FOR ALL THE PARAMETERS ----- #
 repeat = 3
-for N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn in combinations:
+for combination in combinations:
 
+    [N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn, N_fix, chemoatt] = combination
     # change the parameters
     parameters['N'] = N
     parameters['nu_0'] = nu_0
@@ -32,7 +37,9 @@ for N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn in combinations:
     parameters['phi_pack'] = phi_pack
     parameters['fanisotropy'] = anis
     parameters['max_dist'] = dist
-    parameters['update_nn'] = update_nn 
+    parameters['update_nn'] = update_nn
+    parameters['N_fix'] = N_fix
+    parameters['chemoatt'] = chemoatt 
 
     for i in range(0,repeat):
         sim_sphere_fortran.main(parameters)

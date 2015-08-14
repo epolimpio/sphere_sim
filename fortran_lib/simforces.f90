@@ -228,6 +228,33 @@ subroutine get_all_pairs(n_tri, list, pairs)
 
 end subroutine get_all_pairs
 
+subroutine get_all_areas(n_tri, n, pos, list, all_areas)
+
+    implicit none
+    integer(kind=4), intent(in) :: n_tri
+    integer(kind=4), intent(in) :: n
+    
+    integer(kind=4), intent(in), dimension(n_tri, 3) :: list
+    real(kind=8), intent(in), dimension(3,n) :: pos
+    real(kind=8), intent(out), dimension(n) :: all_areas
+
+    real(kind=8) :: tri_area
+    integer(kind=4) :: i, index, i1, i2, i3
+
+    all_areas = 0.0_8
+!   For each triangle write each of the 3 pairs
+    do i=1,n_tri
+        i1 = list(i,1)
+        i2 = list(i,2)
+        i3 = list(i,3)
+        tri_area = areas(pos(:,i1), pos(:,i2), pos(:,i3))
+        all_areas(i1) = all_areas(i1)+tri_area
+        all_areas(i2) = all_areas(i2)+tri_area
+        all_areas(i3) = all_areas(i3)+tri_area
+    end do
+
+end subroutine get_all_areas
+
 subroutine calc_pairs_dist(n_tri, n, pos, list, pairs_dist, pairs)
 
     implicit none
@@ -288,5 +315,3 @@ function cross(a, b)
   cross(3) = a(1) * b(2) - a(2) * b(1)
 
 end function cross
-
-

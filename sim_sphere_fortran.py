@@ -102,6 +102,74 @@ def makePolarData(r, data, n_bins, calc_type='avg'):
 
     return polar_data, bins
 
+def getVoronoiOnSphere(r):
+    """
+    Use STRIPACK to get the Delaunay Triangles List,
+    assuming that the points are on a sphere.
+
+    INPUT: r(3,N) -> array with 3 coordinates for N particles
+    OUTPUT: tri_list(3,2*N-4) 
+    """
+    # Get the parameters (we do not assume unit sphere)
+    N = r.shape[1]
+    mod_r = np.sqrt(np.sum(r**2,0))
+    r = r/mod_r
+    x = r[0,:]
+    y = r[1,:]
+    z = r[2,:]
+
+    # Calculate the Delaunay triangulation
+    dist = np.zeros(N)
+    iwk = np.zeros(2*N)
+    list_,lptr,lend,lnew,near,next,dist,ier = stripack.trmesh(x,y,z,iwk[0:N],iwk[N:],dist)
+    if ier == 0:
+        # Construct the list of neighbors
+        ltri = np.zeros((3,2*N-4))
+        nt, ltri, ier = stripack.trlist2(list_,lptr,lend,ltri)
+        if ier == 0:
+            # we need to correct it to start at 0 and transpose it
+            # to be in conformation with Python
+            out_ltri = ltri.T - 1
+
+            # Get Voronoi baricenters
+            lptr,lnew,ltri,listc,nb,xc,yc,zc,rc,ier = stripack.crlist(N, x, y, z, list_, lend, lptr, lnew)
+            if ier == 0:
+                baricenters = np.array([xc, yc, zc])
+                # Construct polygons dictionary with indices of baricenter
+                # also outputs all the edges pairs (for connection baricenters)
+                # and the areas associated to each cell
+                out_polygon_dict = {}
+                pairs = []
+                all_areas = np.zeros(N)
+                sum_=0
+                for i in range(N):
+                    out_polygon_dict[i] = []
+                    lpl = lend[i]-1
+                    lp = lptr[lpl] - 1
+                    index = listc[lpl] - 1
+
+                    exit_condition = True
+                    while exit_condition:
+                        index_prev = index
+                        index = listc[lp] - 1
+                        if index_prev < index:
+                            pairs.append([index_prev, index])
+                        out_polygon_dict[i].append(index)
+                        lp = lptr[lp] - 1
+                        all_areas[i] += stripack.areas(r[:,i], baricenters[:,index_prev], baricenters[:,index])
+
+                    # Get last piece of area, closing the polygon
+                    index_prev = out_polygon_dict[i][0]
+                    all_areas[i] += stripack.areas(r[:,i], baricenters[:,index_prev], baricenters[:,index])
+                    sum_ += len(out_polygon_dict[i])
+                print(sum_/2)
+                return out_ltri, baricenters, out_polygon_dict, np.array(pairs), all_areas
+            else:
+                return out_ltri, None, None, None, None
+ 
+    # Case it fails
+    return None, None, None, None, None
+
 def getDelaunayTrianglesOnSphere(r):
     """
     Use STRIPACK to get the Delaunay Triangles List,
@@ -129,7 +197,7 @@ def getDelaunayTrianglesOnSphere(r):
             # we need to correct it to start at 0 and transpose it
             # to be in conformation with Python
             return ltri.T - 1
-
+ 
     # Case it fails
     return None
 
@@ -271,7 +339,6 @@ def main(parameters):
 
     # initial neighbors list
     list_ = getDelaunayTrianglesOnSphere(r)
-
     # pin positions
     do_not_update_pos = []
 
@@ -427,7 +494,7 @@ def main(parameters):
                 rotated = True
 
     # write data to disk
-    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated,pairs], open( outfile_video, "wb" ) )
+    pickle.dump( [parameters, r_vs_t,F_vs_t,n_vs_t,rotated,pairs,do_not_update_pos], open( outfile_video, "wb" ) )
     pickle.dump( [parameters, p_angular, av_pairs_dist, res_force, chemo_points, rotated], open( outfile_analysis, "wb" ) )
 
     if rotated or not rotate_coord:

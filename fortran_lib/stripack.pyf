@@ -61,22 +61,22 @@ python module stripack ! in
         end subroutine covsph
         subroutine crlist(n,ncol,x,y,z,list,lend,lptr,lnew,ltri,listc,nb,xc,yc,zc,rc,ier) ! in :stripack:stripack.f90
             integer(kind=4), optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
-            integer(kind=4), optional,intent(in),check(shape(ltri,1)==ncol),depend(ltri) :: ncol=shape(ltri,1)
-            real(kind=8) dimension(n) :: x
-            real(kind=8) dimension(n),depend(n) :: y
-            real(kind=8) dimension(n),depend(n) :: z
-            integer(kind=4) dimension(6 * n - 12),depend(n) :: list
-            integer(kind=4) dimension(n),depend(n) :: lend
-            integer(kind=4) dimension(6 * n - 12),depend(n) :: lptr
-            integer(kind=4) :: lnew
-            integer(kind=4) dimension(6,ncol) :: ltri
-            integer(kind=4) dimension(6 * n - 12),depend(n) :: listc
-            integer(kind=4) :: nb
-            real(kind=8) dimension(2 * n - 4),depend(n) :: xc
-            real(kind=8) dimension(2 * n - 4),depend(n) :: yc
-            real(kind=8) dimension(2 * n - 4),depend(n) :: zc
-            real(kind=8) dimension(2 * n - 4),depend(n) :: rc
-            integer(kind=4) :: ier
+            integer(kind=4) intent(in) :: ncol
+            real(kind=8) dimension(n),intent(in) :: x
+            real(kind=8) dimension(n),intent(in),depend(n) :: y
+            real(kind=8) dimension(n),intent(in),depend(n) :: z
+            integer(kind=4) dimension(6 * n - 12),intent(in),depend(n) :: list
+            integer(kind=4) dimension(n),intent(in),depend(n) :: lend
+            integer(kind=4) dimension(6 * n - 12),intent(in,out),depend(n) :: lptr
+            integer(kind=4) intent(in,out) :: lnew
+            integer(kind=4) dimension(6,ncol),intent(out),depend(ncol) :: ltri
+            integer(kind=4) dimension(6 * n - 12),intent(out),depend(n) :: listc
+            integer(kind=4) intent(out) :: nb
+            real(kind=8) dimension(2 * n - 4),intent(out),depend(n) :: xc
+            real(kind=8) dimension(2 * n - 4),intent(out),depend(n) :: yc
+            real(kind=8) dimension(2 * n - 4),intent(out),depend(n) :: zc
+            real(kind=8) dimension(2 * n - 4),intent(out),depend(n) :: rc
+            integer(kind=4) intent(out) :: ier
         end subroutine crlist
         subroutine delarc(n,io1,io2,list,lptr,lend,lnew,ier) ! in :stripack:stripack.f90
             integer(kind=4), optional,check((len(list)+12)/(6)>=n),depend(list) :: n=(len(list)+12)/(6)

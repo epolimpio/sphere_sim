@@ -1083,13 +1083,30 @@ subroutine crlist ( n, ncol, x, y, z, list, lend, lptr, lnew, &
 
   integer ( kind = 4 ), intent(in) :: n
   integer ( kind = 4 ), intent(in) :: ncol
+  
+  real ( kind = 8 ), intent(in) :: x(n)
+  real ( kind = 8 ), intent(in) :: y(n)
+  real ( kind = 8 ), intent(in) :: z(n)
+  integer ( kind = 4 ), intent(in) :: list(6*(n-2))
+  integer ( kind = 4 ), intent(in) :: lend(n)
+  
+  integer ( kind = 4 ), intent(inout) :: lptr(6*(n-2))
+  integer ( kind = 4 ), intent(inout) :: lnew
+!f2py intent(in,out) :: lptr, lnew  
+  integer ( kind = 4 ), intent(out) :: ltri(6,ncol)
+  integer ( kind = 4 ), intent(out) :: listc(6*(n-2))
+  integer ( kind = 4 ), intent(out) :: nb
+  real ( kind = 8 ), intent(out) :: xc(2*n-4)
+  real ( kind = 8 ), intent(out) :: yc(2*n-4)
+  real ( kind = 8 ), intent(out) :: zc(2*n-4)
+  real ( kind = 8 ), intent(out) :: rc(2*n-4)
+  integer ( kind = 4 ), intent(out) :: ier
 
   real ( kind = 8 ) c(3)
   integer ( kind = 4 ) i1
   integer ( kind = 4 ) i2
   integer ( kind = 4 ) i3
   integer ( kind = 4 ) i4
-  integer ( kind = 4 ) ier
   integer ( kind = 4 ) ierr
   integer ( kind = 4 ) kt
   integer ( kind = 4 ) kt1
@@ -1098,38 +1115,24 @@ subroutine crlist ( n, ncol, x, y, z, list, lend, lptr, lnew, &
   integer ( kind = 4 ) kt2
   integer ( kind = 4 ) kt21
   integer ( kind = 4 ) kt22
-  integer ( kind = 4 ) lend(n)
-  integer ( kind = 4 ) list(6*(n-2))
-  integer ( kind = 4 ) listc(6*(n-2))
-  integer ( kind = 4 ) lnew
   integer ( kind = 4 ) lp
   integer ( kind = 4 ) lpl
   integer ( kind = 4 ) lpn
-  integer ( kind = 4 ) lptr(6*(n-2))
   integer ( kind = 4 ) lstptr
-  integer ( kind = 4 ) ltri(6,ncol)
   integer ( kind = 4 ) n0
   integer ( kind = 4 ) n1
   integer ( kind = 4 ) n2
   integer ( kind = 4 ) n3
   integer ( kind = 4 ) n4
-  integer ( kind = 4 ) nb
   integer ( kind = 4 ) nm2
   integer ( kind = 4 ) nn
   integer ( kind = 4 ) nt
-  real ( kind = 8 ) rc(2*n-4)
   logical swp
   logical swptst
   real ( kind = 8 ) t
   real ( kind = 8 ) v1(3)
   real ( kind = 8 ) v2(3)
   real ( kind = 8 ) v3(3)
-  real ( kind = 8 ) x(n)
-  real ( kind = 8 ) xc(2*n-4)
-  real ( kind = 8 ) y(n)
-  real ( kind = 8 ) yc(2*n-4)
-  real ( kind = 8 ) z(n)
-  real ( kind = 8 ) zc(2*n-4)
 
   nn = n
   nb = 0

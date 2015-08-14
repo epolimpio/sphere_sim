@@ -2,6 +2,14 @@ import numpy as np
 import re
 import os
 
+def sigmoidalFunction(x, a, b, c):
+    """
+    Calculates the sigmoidal function S(x) = a/(b + exp(-c*x)) + d
+    x is a numpy vector
+    a, b, c and d are real numbers
+    """
+    return a/(b + np.exp(-c*x))
+
 def readConfigFile(path):
     """
     Read the standardized configuration file of this

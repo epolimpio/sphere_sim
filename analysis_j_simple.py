@@ -34,30 +34,27 @@ path = './data'
 parameters = readConfigFile('parameters.ini')
 
 # Now we choose the parameters we want to compare in the graph
+# conditions: N, phi, eta, nu, J
 all_N = [100]
 all_phi = [1]
-all_nu = [0.5]
-all_J = [0.1, 0.5, 1, 2]
-all_eta = [0.5]
+all_nu = [1]
+all_J = [0.1, 0.2, 0.4, 0.5, 1, 1.5, 2]
+all_eta = [1]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
-all_N_fix = [0]
-all_chemoatt = [0, 1]
 
-all_comb = [all_N, all_phi, all_nu, all_J, all_eta, 
-            all_anisotropy, all_max_dist, all_update_nn,
-            all_N_fix, all_chemoatt]
+all_comb = [all_N, all_phi, all_nu, all_J, all_eta, all_anisotropy, all_max_dist, all_update_nn]
 conditions = list(itertools.product(*all_comb))
 
 # Here we define the legend style
-variables_legend = ['J', 'chemoatt']
-legend_format = r'$J = {0}, c = {1}$'
+variables_legend = ['J']
+legend_format = r'$J = {0}$'
 # define the parameters of the graphs
 combinations = {}
 cnt = 0
 for condition in conditions:
-    [N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn, N_fix, chemoatt] = condition
+    N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn = condition
     # change the parameters
     parameters['N'] = N
     parameters['nu_0'] = nu_0
@@ -67,15 +64,18 @@ for condition in conditions:
     parameters['fanisotropy'] = anis
     parameters['max_dist'] = dist
     parameters['update_nn'] = update_nn
-    parameters['N_fix'] = N_fix
-    parameters['chemoatt'] = chemoatt 
     combinations[cnt] = parameters.copy()
     cnt += 1
 
 # Prepare figure
 fig = plt.figure(1)
-ax = plt.subplot(1,2,1)
-ax2 = plt.subplot(1,2,2)
+ax = plt.subplot(2,2,1)
+ax2 = plt.subplot(2,2,2)
+ax3 = plt.subplot(2,2,3)
+ax4 = plt.subplot(2,2,4)
+variable = []
+chract_time = []
+max_val = []
 for cnt in combinations:
     combination = combinations[cnt]
     files,dates = findFilesWithParameters(metadata, combination)
@@ -116,6 +116,11 @@ for cnt in combinations:
     p_std = p_std - p_mean**2
 
     popt, pcov = curve_fit(sigmoidalFunction, t, p_mean)
+    a, b, c = popt
+
+    variable.append(combination[variables_legend[0]])
+    chract_time.append(c)
+    max_val.append(a/b)
 
     p_mean_sub = p_mean - sigmoidalFunction(t, *popt)
     # Plot the result
@@ -131,17 +136,25 @@ for cnt in combinations:
     ax.fill_between(t, p_mean-p_std, p_mean+p_std, facecolor=color, alpha=0.3)
 
     # Plot subtracted values
-    line, = ax2.plot(t, p_mean_sub, label=legend_str)
-    color = line.get_color()
-    ax2.fill_between(t, p_mean_sub-p_std, p_mean_sub+p_std, facecolor=color, alpha=0.3)
+    # line, = ax2.plot(t, p_mean_sub, label=legend_str)
+    # color = line.get_color()
+    # ax2.fill_between(t, p_mean_sub-p_std, p_mean_sub+p_std, facecolor=color, alpha=0.3)
+
+    # Plot FFT
+    freq = np.fft.fftfreq(t.shape[-1])
+    w = blackman(n_steps)
+    sp = np.fft.fft(p_mean_sub)
+    ax3.plot(freq[0:n_steps*dt]/dt, np.abs(sp)[0:n_steps*dt])
+
+ax2.plot(variable, max_val)
+ax4.plot(variable, chract_time)
+slope, intercept, r_value, p_value, std_err = stats.linregress(np.array(variable),np.array(chract_time))
+print(slope, r_value**2)
 
 
 #ax.set_yscale('log')
 ax.legend(loc=4)
 ax.set_xlabel(r'Time ($\tau$)')
 ax.set_ylabel(r'Order parameter')
-
-ax2.set_xlabel(r'Time ($\tau$)')
-ax2.set_ylabel(r'Deviation')
 
 plt.show()
