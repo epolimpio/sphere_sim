@@ -144,25 +144,24 @@ def getVoronoiOnSphere(r):
                 sum_=0
                 for i in range(N):
                     out_polygon_dict[i] = []
+                    
                     lpl = lend[i]-1
-                    lp = lptr[lpl] - 1
-                    index = listc[lpl] - 1
+                    index = listc[lpl]-1
+                    lp = lpl
 
                     exit_condition = True
                     while exit_condition:
+                        lp = lptr[lp]-1
                         index_prev = index
-                        index = listc[lp] - 1
+                        index = listc[lp]-1
                         if index_prev < index:
                             pairs.append([index_prev, index])
-                        out_polygon_dict[i].append(index)
-                        lp = lptr[lp] - 1
+                        out_polygon_dict[i].append(index_prev)
                         all_areas[i] += stripack.areas(r[:,i], baricenters[:,index_prev], baricenters[:,index])
-
-                    # Get last piece of area, closing the polygon
-                    index_prev = out_polygon_dict[i][0]
-                    all_areas[i] += stripack.areas(r[:,i], baricenters[:,index_prev], baricenters[:,index])
+                        if lp == lpl:
+                            exit_condition = False
                     sum_ += len(out_polygon_dict[i])
-                print(sum_/2)
+
                 return out_ltri, baricenters, out_polygon_dict, np.array(pairs), all_areas
             else:
                 return out_ltri, None, None, None, None

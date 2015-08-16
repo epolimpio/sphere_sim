@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -65,6 +67,12 @@ rho=np.sqrt(N/4/phi_pack) # sphere radius
 data_analysis = openPickleFile(datetime.strftime(dtime,parameters['outfile_analysis']))
 p_angular = np.array(data_analysis[1])[np.arange(n_save-1, n_steps, n_save)]
 
+# Plot Voronoi?
+plot_voronoi = False
+
+# Plot Springs?
+plot_springs = True
+
 # setup the plane of the plot
 x_plane = 0
 y_plane = 1
@@ -86,16 +94,22 @@ def setup_figure():
 
     cells=[]
     springs=[]
+    borders=[]
     for i in range(0,N):
         c = plt.Circle((-0,0),0.5,color=cm.copper(0))
         cells.append(ax.add_artist(c))
 
-    for i in range(0,1000):
-        springs += ax.plot([], [], color=cm.spectral(0))
+    if plot_springs:
+        for i in range(0,len(pairs)):
+            springs += ax.plot([], [], color=cm.spectral(0))
+
+    if plot_voronoi:
+        for i in range(0, pairs2.shape[0]):
+            borders += ax.plot([], [], color='k')
 
     ang_mom = ax.add_patch(FancyArrowPatch((0,0),(1,1),ec='r', fc='r', zorder=0, arrowstyle=u'simple,head_width=20, head_length=10'))
 
-    return(fig,cells,springs,ang_mom)
+    return(fig,cells,springs,borders,ang_mom)
 
 # animation function.  This is called sequentially
 def animate(f):
@@ -110,9 +124,6 @@ def animate(f):
 
     if update_nn:
         pairs = simforces.get_all_pairs(getDelaunayTrianglesOnSphere(r)+1)
-        list_, baricenters, out_polygon_dict, pairs2, all_areas = getVoronoiOnSphere(r)
-    
-    #indsort=np.argsort(r[z_plane,:])
     
     for i in range(0,N):
         #j=indsort[i]
@@ -121,24 +132,33 @@ def animate(f):
         cells[i].set_facecolor(cm.copper(c))
         cells[i].set_zorder(r[z_plane,i])
 
-    r = rho*baricenters
-    print(len(pairs2))
-    pairs = pairs2
+    if plot_springs:
+        for i in range(0,len(pairs)):
+            i1 = pairs[i,0] - 1
+            i2 = pairs[i,1] - 1
+            if (r[z_plane,i1] > 0) and (r[z_plane,i2] > 0):
+                dist = np.sqrt(np.sum((r[:,i1]- r[:,i2])**2))
+                c=int((dist-1)*128)
+                springs[i].set_data([r[x_plane,i1], r[x_plane,i2]], [r[y_plane,i1], r[y_plane,i2]])
+                springs[i].set_color(cm.spectral(c))
+            else:
+                springs[i].set_data([], [])
 
-    for i in range(0,len(pairs)):
-        i1 = pairs[i,0] #- 1
-        i2 = pairs[i,1] #- 1
-        if (r[z_plane,i1] > 0) and (r[z_plane,i2] > 0):
-            dist = np.sqrt(np.sum((r[:,i1]- r[:,i2])**2))
-            c=int((dist-1)*128)
-            springs[i].set_data([r[x_plane,i1], r[x_plane,i2]], [r[y_plane,i1], r[y_plane,i2]])
-            springs[i].set_color(cm.spectral(0))
-        else:
-            springs[i].set_data([], [])
+    if plot_voronoi:
+        list_, baricenters, out_polygon_dict, pairs2, all_areas = getVoronoiOnSphere(r)
+        b = rho*baricenters
+        for i in range(0,len(pairs2)):
+            i1 = pairs2[i,0]
+            i2 = pairs2[i,1]
+            if (b[z_plane,i1] > 0) and (b[z_plane,i2] > 0):
+                borders[i].set_data([b[x_plane,i1], b[x_plane,i2]], [b[y_plane,i1], b[y_plane,i2]])
+            else:
+                borders[i].set_data([], [])        
+
       
-    return (cells,springs,ang_mom)
+    return (cells,springs,borders,ang_mom)
 
 plt.clf()
-(fig,cells,springs,ang_mom)=setup_figure()
+(fig,cells,springs,borders,ang_mom)=setup_figure()
 anim = animation.FuncAnimation(fig, animate, frames=n_steps//n_save, interval=1, blit=False)
 plt.show()

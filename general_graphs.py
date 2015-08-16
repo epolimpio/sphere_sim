@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -83,6 +85,7 @@ fig_num = 0
 fig_num += 1
 fig = plt.figure(fig_num)
 ax = plt.subplot(111)
+plt.ion()
 
 ps = [0.0,]*n_steps
 for i in range(0,n_steps):
@@ -169,4 +172,4 @@ if rotated or not rotate_coord:
     plt.xlabel(r'$\theta$')
     plt.ylabel(r'Density')
 
-plt.show()
+plt.show(block=True)
