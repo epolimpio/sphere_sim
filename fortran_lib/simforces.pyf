@@ -11,6 +11,16 @@ python module simforces ! in
             real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
             real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
         end subroutine calc_force_elastic
+        subroutine calc_force_elastic_plane(n,pos,dir_vec,v0,l,boundary,f_tot,stress) ! in :simforces:simforces.f90
+            integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
+            real(kind=8) dimension(3,n),intent(in) :: pos
+            real(kind=8) dimension(3,n),intent(in),depend(n) :: dir_vec
+            real(kind=8) intent(in) :: v0
+            real(kind=8) intent(in) :: l
+            integer(kind=4) dimension(n),intent(in),depend(n) :: boundary
+            real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
+        end subroutine calc_force_elastic_plane
         subroutine calc_force_hooke_break(n,n_tri,pos,dir_vec,v0,anisotropy,max_dist,list,f_tot,stress) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
             integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
@@ -23,6 +33,20 @@ python module simforces ! in
             real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
             real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
         end subroutine calc_force_hooke_break
+        subroutine calc_force_hooke_break_plane(n,n_tri,pos,dir_vec,v0,anisotropy,max_dist,l,boundary,list,f_tot,stress) ! in :simforces:simforces.f90
+            integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
+            integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
+            real(kind=8) dimension(3,n),intent(in) :: pos
+            real(kind=8) dimension(3,n),intent(in),depend(n) :: dir_vec
+            real(kind=8) intent(in) :: v0
+            real(kind=8) intent(in) :: anisotropy
+            real(kind=8) intent(in) :: max_dist
+            real(kind=8) intent(in) :: l
+            integer(kind=4) dimension(n),intent(in),depend(n) :: boundary
+            integer(kind=4) dimension(n_tri,3),intent(in) :: list
+            real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
+        end subroutine calc_force_hooke_break_plane
         subroutine calc_force_hooke(n,n_tri,pos,dir_vec,v0,list,f_tot,stress) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
             integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
@@ -33,12 +57,29 @@ python module simforces ! in
             real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
             real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
         end subroutine calc_force_hooke
-        subroutine add_stress(r,rij,fij,stress) ! in :simforces:simforces.f90
+        subroutine calc_force_hooke_plane(n,n_tri,pos,dir_vec,v0,l,boundary,list,f_tot,stress) ! in :simforces:simforces.f90
+            integer(kind=4), optional,intent(in),check(shape(pos,1)==n),depend(pos) :: n=shape(pos,1)
+            integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
+            real(kind=8) dimension(3,n),intent(in) :: pos
+            real(kind=8) dimension(3,n),intent(in),depend(n) :: dir_vec
+            real(kind=8) intent(in) :: v0
+            real(kind=8) intent(in) :: l
+            integer(kind=4) dimension(n),intent(in),depend(n) :: boundary
+            integer(kind=4) dimension(n_tri,3),intent(in) :: list
+            real(kind=8) dimension(3,n),intent(out),depend(n) :: f_tot
+            real(kind=8) dimension(9,n),intent(out),depend(n) :: stress
+        end subroutine calc_force_hooke_plane
+        subroutine add_stress_spherical(r,rij,fij,stress) ! in :simforces:simforces.f90
             real(kind=8) dimension(3),intent(in) :: r
             real(kind=8) dimension(3),intent(in) :: rij
             real(kind=8) dimension(3),intent(in) :: fij
             real(kind=8) dimension(9),intent(inout) :: stress
-        end subroutine add_stress
+        end subroutine add_stress_spherical
+        subroutine add_stress_plane(rij,fij,stress) ! in :simforces:simforces.f90
+            real(kind=8) dimension(3),intent(in) :: rij
+            real(kind=8) dimension(3),intent(in) :: fij
+            real(kind=8) dimension(9),intent(inout) :: stress
+        end subroutine add_stress_plane
         subroutine get_all_pairs(n_tri,list,pairs) ! in :simforces:simforces.f90
             integer(kind=4), optional,intent(in),check(shape(list,0)==n_tri),depend(list) :: n_tri=shape(list,0)
             integer(kind=4) dimension(n_tri,3),intent(in) :: list

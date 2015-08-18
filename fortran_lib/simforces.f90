@@ -36,14 +36,78 @@ subroutine calc_force_elastic(n, pos, dir_vec, v0, f_tot, stress)
             if (f .gt. 0) then
                 Fij = rij/mod_rij*f
                 f_tot(:,i) = f_tot(:,i) + Fij(:)
-                call add_stress(pos(:,i), rij, Fij, stress(:,i))
+                call add_stress_spherical(pos(:,i), rij, Fij, stress(:,i))
                 f_tot(:,j) = f_tot(:,j) - Fij(:)
-                call add_stress(pos(:,j), -rij, -Fij, stress(:,j))
+                call add_stress_spherical(pos(:,j), -rij, -Fij, stress(:,j))
             end if
         end do
     end do
 
 end subroutine calc_force_elastic
+
+subroutine calc_force_elastic_plane(n, pos, dir_vec, v0, L, boundary, f_tot, stress)
+!   Calculate the pair forces in the case of only elastic (repulsive) forces
+!   
+!   INPUT: n-> number of particles
+!   INPUT: pos-> (3,n)-array with the coordinates of all the particles
+!   INPUT: dir_vec-> (3,n)-array with the direction movement of the particles
+!   INPUT: v0-> scalar with the active force parameter
+!   INPUT: L-> scalar with the dimension of the 'box'
+!   INPUT: boundary(n)-> 0/1 array indicating the particles in the boundary
+!
+!   OUTPUT: f_tot-> (3,n)-array with the coordinates of the total force
+
+    implicit none
+    integer(kind=4), intent(in) :: n
+    
+    real(kind=8), intent(in) :: v0
+    real(kind=8), intent(in) :: L
+    integer(kind=4), intent(in), dimension(n) :: boundary
+    real(kind=8), intent(in), dimension(3,n) :: pos
+    real(kind=8), intent(in), dimension(3,n) :: dir_vec
+    real(kind=8), intent(out), dimension(3,n) :: f_tot
+    real(kind=8), intent(out), dimension(9,n) :: stress
+    real(kind=8), dimension(3) :: rij
+    real(kind=8) :: mod_rij, f, bound_dist
+    real(kind=8), dimension(3) :: Fij
+    integer(kind=4) :: i, j, dim
+
+!   Start stress matrix
+    stress = 0
+
+!   Calculate the active force
+    f_tot = v0*dir_vec
+
+!   Sum the elastic force for each pair
+    do i = 1,n
+        do j = i+1, n
+            rij(:) = pos(:,i) - pos(:,j)
+            mod_rij = sqrt(dot_product(rij,rij))
+            f = 2 - mod_rij
+            if (f .gt. 0) then
+                Fij = rij/mod_rij*f
+                f_tot(:,i) = f_tot(:,i) + Fij(:)
+                call add_stress_plane(rij, Fij, stress(:,i))
+                f_tot(:,j) = f_tot(:,j) - Fij(:)
+                call add_stress_plane(-rij, -Fij, stress(:,j))
+            end if
+!   Do the boundary interactions
+            if (boundary(i) .eq. 1) then
+                do dim = 1,2
+                    if (pos(dim,i) .gt. 0) then
+                        bound_dist = pos(dim,i)-0.5*L
+                    else
+                        bound_dist = pos(dim,i)+0.5*L
+                    end if
+                    if (abs(bound_dist) .lt. 1) then
+                        f_tot(dim,i) = f_tot(dim,i) + (1-abs(bound_dist))*bound_dist/abs(bound_dist)
+                    end if
+                end do
+            end if
+        end do
+    end do
+
+end subroutine calc_force_elastic_plane
 
 subroutine calc_force_hooke_break(n, n_tri, pos, dir_vec, v0, anisotropy, max_dist, list, f_tot, stress)
 !   Calculate the pair forces in the case of only elastic (repulsive) forces
@@ -56,7 +120,7 @@ subroutine calc_force_hooke_break(n, n_tri, pos, dir_vec, v0, anisotropy, max_di
 !   INPUT: max_dist-> distance on which force is zero. If -1 it is neglected
 !
 !   OUTPUT: f_tot-> (3,n)-array with the coordinates of the total force
-!   OUTPUT: stress -> (9,n)-array with all the stress components in apherical coordinates
+!   OUTPUT: stress -> (9,n)-array with all the stress components in spherical coordinates
 
     implicit none
     integer(kind=4), intent(in) :: n_tri
@@ -108,13 +172,113 @@ subroutine calc_force_hooke_break(n, n_tri, pos, dir_vec, v0, anisotropy, max_di
         if (f .gt. 1e-9) then                           
             Fij = rij/mod_rij*(2-mod_rij)
             f_tot(:,i1) = f_tot(:,i1) + Fij(:)
-            call add_stress(pos(:,i1), rij, Fij, stress(:,i1))
+            call add_stress_spherical(pos(:,i1), rij, Fij, stress(:,i1))
             f_tot(:,i2) = f_tot(:,i2) - Fij(:)
-            call add_stress(pos(:,i2), -rij, -Fij, stress(:,i2))
+            call add_stress_spherical(pos(:,i2), -rij, -Fij, stress(:,i2))
         end if
     end do
     
 end subroutine calc_force_hooke_break
+
+subroutine calc_force_hooke_break_plane(n, n_tri, pos, dir_vec, v0, anisotropy, max_dist, L, boundary, list, f_tot, stress)
+!   Calculate the pair forces in the case of only elastic (repulsive) forces
+!   
+!   INPUT: n-> number of particles
+!   INPUT: pos-> (3,n)-array with the coordinates of all the particles
+!   INPUT: dir_vec-> (3,n)-array with the direction movement of the particles
+!   INPUT: v0-> scalar with the active force parameter
+!   INPUT: anisotropy-> ratio of the force in pulling and pushing of the spring (k_pull/k_push)
+!   INPUT: max_dist-> distance on which force is zero. If -1 it is neglected
+!   INPUT: L-> scalar with the dimension of the 'box'
+!   INPUT: boundary(n)-> 0/1 array indicating the particles in the boundary
+!
+!   OUTPUT: f_tot-> (3,n)-array with the coordinates of the total force
+!   OUTPUT: stress -> (9,n)-array with all the stress components
+
+    implicit none
+    integer(kind=4), intent(in) :: n_tri
+    integer(kind=4), intent(in) :: n
+    
+    real(kind=8), intent(in) :: v0
+    real(kind=8), intent(in) :: anisotropy
+    real(kind=8), intent(in) :: max_dist
+    real(kind=8), intent(in) :: L
+    integer(kind=4), intent(in), dimension(n) :: boundary
+    real(kind=8), intent(in), dimension(3,n) :: pos
+    real(kind=8), intent(in), dimension(3,n) :: dir_vec
+    integer(kind=4), intent(in), dimension(n_tri, 3) :: list
+    real(kind=8), intent(out), dimension(3,n) :: f_tot
+    real(kind=8), intent(out), dimension(9,n) :: stress
+    integer(kind=4), dimension(3*n_tri,2) :: pairs
+    real(kind=8), dimension(3) :: rij
+    real(kind=8), dimension(3) :: Fij
+    real(kind=8) :: mod_rij, f, k, bound_dist
+    integer(kind=4) :: i, i1, i2, dim
+
+!   Start stress matrix
+    stress = 0
+
+!   Calculate the active force
+    f_tot = v0*dir_vec
+
+!   Get the list of all pairs
+    call get_all_pairs(n_tri, list, pairs)
+
+!   Sum the Hooke force for each pair
+    do i=1,3*n_tri
+        i1 = pairs(i,1)
+        i2 = pairs(i,2)
+        rij(:) = pos(:,i1) - pos(:,i2)
+        mod_rij = sqrt(dot_product(rij,rij))
+        f = 2-mod_rij
+        if (f .lt. 0) then
+!       pushing
+            k = 1
+        else
+!       pulling
+            k = anisotropy
+        end if          
+!       check if the distance is above max_dist
+        if ((max_dist .gt. 2) .and. (mod_rij .gt. max_dist))  then
+            k = 0
+        end if
+!       correct f and check if it is above 0
+        f = k*f
+        if (f .gt. 1e-9) then                           
+            Fij = rij/mod_rij*(2-mod_rij)
+            f_tot(:,i1) = f_tot(:,i1) + Fij(:)
+            call add_stress_plane(rij, Fij, stress(:,i1))
+            f_tot(:,i2) = f_tot(:,i2) - Fij(:)
+            call add_stress_plane(-rij, -Fij, stress(:,i2))
+        end if
+!   Do the boundary interactions
+        if (boundary(i1) .eq. 1) then
+            do dim = 1,2
+                if (pos(dim,i1) .gt. 0) then
+                    bound_dist = pos(dim,i1)-0.5*L
+                else
+                    bound_dist = pos(dim,i1)+0.5*L
+                end if
+                if (abs(bound_dist) .lt. 1) then
+                    f_tot(dim,i1) = f_tot(dim,i1) + (1-abs(bound_dist))*bound_dist/abs(bound_dist)
+                end if
+            end do
+        end if
+        if (boundary(i2) .eq. 1) then
+            do dim = 1,2
+                if (pos(dim,i2) .gt. 0) then
+                    bound_dist = pos(dim,i2)-0.5*L
+                else
+                    bound_dist = pos(dim,i2)+0.5*L
+                end if
+                if (abs(bound_dist) .lt. 1) then
+                    f_tot(dim,i2) = f_tot(dim,i2) + (1-abs(bound_dist))*bound_dist/abs(bound_dist)
+                end if
+            end do
+        end if
+    end do
+    
+end subroutine calc_force_hooke_break_plane
 
 subroutine calc_force_hooke(n, n_tri, pos, dir_vec, v0, list, f_tot, stress)
 !   Calculate the pair forces in the case of only elastic (repulsive) forces
@@ -161,14 +325,91 @@ subroutine calc_force_hooke(n, n_tri, pos, dir_vec, v0, list, f_tot, stress)
         mod_rij = sqrt(dot_product(rij,rij))
         Fij = rij/mod_rij*(2-mod_rij)
         f_tot(:,i1) = f_tot(:,i1) + Fij(:)
-        call add_stress(pos(:,i1), rij, Fij, stress(:,i1))
+        call add_stress_spherical(pos(:,i1), rij, Fij, stress(:,i1))
         f_tot(:,i2) = f_tot(:,i2) - Fij(:)
-        call add_stress(pos(:,i2), -rij, -Fij, stress(:,i2))
+        call add_stress_spherical(pos(:,i2), -rij, -Fij, stress(:,i2))
     end do
 
 end subroutine calc_force_hooke
 
-subroutine add_stress(r, rij, Fij, stress)
+subroutine calc_force_hooke_plane(n, n_tri, pos, dir_vec, v0, L, boundary, list, f_tot, stress)
+!   Calculate the pair forces in the case of only elastic (repulsive) forces
+!   
+!   INPUT: n-> number of particles
+!   INPUT: n_tri-> number of triangles
+!   INPUT: pos-> (3,n)-array with the coordinates of all the particles
+!   INPUT: list-> (n_tri,3)-array with the list of the nodes of the triangles
+!   INPUT: dir_vec-> (3,n)-array with the direction movement of the particles
+!   INPUT: v0-> scalar with the active force parameter
+!   INPUT: L-> scalar with the dimension of the 'box'
+!   INPUT: boundary(n)-> 0/1 array indicating the particles in the boundary
+!
+!   OUTPUT: f_tot-> (3,n)-array with the coordinates of the total force
+
+    implicit none
+    integer(kind=4), intent(in) :: n_tri
+    integer(kind=4), intent(in) :: n
+    
+    real(kind=8), intent(in) :: v0
+    real(kind=8), intent(in) :: L
+    integer(kind=4), intent(in), dimension(n) :: boundary
+    real(kind=8), intent(in), dimension(3,n) :: pos
+    real(kind=8), intent(in), dimension(3,n) :: dir_vec
+    integer(kind=4), intent(in), dimension(n_tri, 3) :: list
+    real(kind=8), intent(out), dimension(3,n) :: f_tot
+    real(kind=8), intent(out), dimension(9,n) :: stress
+    integer(kind=4), dimension(3*n_tri,2) :: pairs
+    real(kind=8), dimension(3) :: rij
+    real(kind=8), dimension(3) :: Fij
+    real(kind=8) :: mod_rij, bound_dist
+    integer(kind=4) :: i, i1, i2, dim
+
+!   Start stress matrix
+    stress = 0
+
+!   Calculate the active force
+    f_tot = v0*dir_vec
+
+!   Get the list of all pairs
+    call get_all_pairs(n_tri, list, pairs)
+
+!   Sum the Hooke force for each pair
+    do i=1,3*n_tri
+        i1 = pairs(i,1)
+        i2 = pairs(i,2)
+        rij(:) = pos(:,i1) - pos(:,i2) 
+        mod_rij = sqrt(dot_product(rij,rij))
+        Fij = rij/mod_rij*(2-mod_rij)
+        f_tot(:,i1) = f_tot(:,i1) + Fij(:)
+        call add_stress_plane(rij, Fij, stress(:,i1))
+        f_tot(:,i2) = f_tot(:,i2) - Fij(:)
+        call add_stress_plane(-rij, -Fij, stress(:,i2))
+!   Do the boundary interactions
+        do dim = 1,2
+            if (pos(dim,i1) .gt. 0) then
+                bound_dist = pos(dim,i1)-0.5*L
+            else
+                bound_dist = pos(dim,i1)+0.5*L
+            end if
+            if (abs(bound_dist) .lt. 1) then
+                f_tot(dim,i1) = f_tot(dim,i1) + (1-abs(bound_dist))*bound_dist/abs(bound_dist)
+            end if
+        end do
+        do dim = 1,2
+            if (pos(dim,i2) .gt. 0) then
+                bound_dist = pos(dim,i2)-0.5*L
+            else
+                bound_dist = pos(dim,i2)+0.5*L
+            end if
+            if (abs(bound_dist) .lt. 1) then
+                f_tot(dim,i2) = f_tot(dim,i2) + (1-abs(bound_dist))*bound_dist/abs(bound_dist)
+            end if
+        end do
+    end do
+
+end subroutine calc_force_hooke_plane
+
+subroutine add_stress_spherical(r, rij, Fij, stress)
 
     real(kind=8), intent(in), dimension(3) :: r
     real(kind=8), intent(in), dimension(3) :: rij
@@ -205,7 +446,45 @@ subroutine add_stress(r, rij, Fij, stress)
     stress(8) = stress(8) + rth*Fphi
     stress(9) = stress(9) + rphi*Fphi
 
-end subroutine add_stress
+end subroutine add_stress_spherical
+
+subroutine add_stress_plane(rij, Fij, stress)
+
+    real(kind=8), intent(in), dimension(3) :: rij
+    real(kind=8), intent(in), dimension(3) :: Fij
+    real(kind=8), intent(inout), dimension(9) :: stress
+    
+    real(kind=8), dimension(3) :: e_x
+    real(kind=8), dimension(3) :: e_y
+    real(kind=8), dimension(3) :: e_z
+    real(kind=8) :: Fx, rx
+    real(kind=8) :: Fy, ry
+    real(kind=8) :: Fz, rz
+
+    e_x = (/ 1, 0, 0/)
+    e_y = (/ 0, 1, 0/)
+    e_z = (/ 0, 0, 1/)
+
+    ! Calculate the components in spherical coordinates
+    Fx = dot_product(e_x, Fij)
+    Fy = dot_product(e_y, Fij)
+    Fz = dot_product(e_z, Fij)
+    rx = dot_product(e_x, rij)
+    ry = dot_product(e_y, rij)
+    rz = dot_product(e_z, rij)
+
+    ! Add the nine components of the stress
+    stress(1) = stress(1) + rx*Fx
+    stress(2) = stress(2) + ry*Fx
+    stress(3) = stress(3) + rz*Fx
+    stress(4) = stress(4) + rx*Fy
+    stress(5) = stress(5) + ry*Fy
+    stress(6) = stress(6) + rz*Fy
+    stress(7) = stress(7) + rx*Fz
+    stress(8) = stress(8) + ry*Fz
+    stress(9) = stress(9) + rz*Fz
+
+end subroutine add_stress_plane
 
 subroutine get_all_pairs(n_tri, list, pairs)
 
@@ -229,33 +508,6 @@ subroutine get_all_pairs(n_tri, list, pairs)
     end do
 
 end subroutine get_all_pairs
-
-subroutine get_all_areas(n_tri, n, pos, list, all_areas)
-
-    implicit none
-    integer(kind=4), intent(in) :: n_tri
-    integer(kind=4), intent(in) :: n
-    
-    integer(kind=4), intent(in), dimension(n_tri, 3) :: list
-    real(kind=8), intent(in), dimension(3,n) :: pos
-    real(kind=8), intent(out), dimension(n) :: all_areas
-
-    real(kind=8) :: tri_area
-    integer(kind=4) :: i, index, i1, i2, i3
-
-    all_areas = 0.0_8
-!   For each triangle write each of the 3 pairs
-    do i=1,n_tri
-        i1 = list(i,1)
-        i2 = list(i,2)
-        i3 = list(i,3)
-        tri_area = areas(pos(:,i1), pos(:,i2), pos(:,i3))
-        all_areas(i1) = all_areas(i1)+tri_area
-        all_areas(i2) = all_areas(i2)+tri_area
-        all_areas(i3) = all_areas(i3)+tri_area
-    end do
-
-end subroutine get_all_areas
 
 subroutine calc_pairs_dist(n_tri, n, pos, list, pairs_dist, pairs)
 
