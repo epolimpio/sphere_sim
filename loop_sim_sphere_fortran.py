@@ -1,6 +1,7 @@
 import sim_sphere_fortran
 from myutils import readConfigFile
 from datetime import datetime
+import numpy as np
 import metadata_lib
 import itertools
 
@@ -11,8 +12,8 @@ parameters = readConfigFile('parameters.ini')
 all_N = [100]
 all_phi = [1]
 all_nu = [1]
-all_J = (0.1*np.arange(1,21)).tolist()
-all_eta = [0.1, 1]
+all_J = (0.15*np.arange(1,6)).tolist()
+all_eta = (0.15*np.arange(6,11)).tolist()
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
