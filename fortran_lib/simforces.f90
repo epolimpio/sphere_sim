@@ -181,6 +181,7 @@ subroutine add_stress(r, rij, Fij, stress)
     real(kind=8) :: Fr, rr
     real(kind=8) :: Fth, rth
     real(kind=8) :: Fphi, rphi
+    real(kind=8), dimension(3) :: rij_uni
 
     call get_spherical_unit_vec(r, e_r, e_phi, e_theta)
 
@@ -188,9 +189,10 @@ subroutine add_stress(r, rij, Fij, stress)
     Fr = dot_product(e_r, Fij)
     Fth = dot_product(e_theta, Fij)
     Fphi = dot_product(e_phi, Fij)
-    rr = dot_product(e_r, rij)
-    rth = dot_product(e_theta, rij)
-    rphi = dot_product(e_phi, rij)
+    rij_uni = rij/sqrt(dot_product(rij,rij))
+    rr = dot_product(e_r, rij_uni)
+    rth = dot_product(e_theta, rij_uni)
+    rphi = dot_product(e_phi, rij_uni)
 
     ! Add the nine components of the stress
     stress(1) = stress(1) + rr*Fr

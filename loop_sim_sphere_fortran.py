@@ -11,14 +11,14 @@ parameters = readConfigFile('parameters.ini')
 all_N = [100]
 all_phi = [1]
 all_nu = [1]
-all_J = [0.01, 0.1, 1]
+all_J = (0.1*np.arange(1,21)).tolist()
 all_eta = [0.1, 1]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
 all_N_fix = [0]
-all_chemoatt = [1]
-all_Jchemo = [0.1, 1]
+all_chemoatt = [0]
+all_Jchemo = [1]
 
 all_comb = [all_N, all_phi, all_nu, all_J, all_eta, 
             all_anisotropy, all_max_dist, all_update_nn,

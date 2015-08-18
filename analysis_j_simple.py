@@ -1,3 +1,4 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -38,7 +39,7 @@ parameters = readConfigFile('parameters.ini')
 all_N = [100]
 all_phi = [1]
 all_nu = [1]
-all_J = [0.1, 0.2, 0.4, 0.5, 1, 1.5, 2]
+all_J = [0.1, 1]
 all_eta = [1]
 all_anisotropy = [1]
 all_max_dist = [0]
@@ -73,6 +74,8 @@ ax = plt.subplot(2,2,1)
 ax2 = plt.subplot(2,2,2)
 ax3 = plt.subplot(2,2,3)
 ax4 = plt.subplot(2,2,4)
+fig2 = plt.figure(2)
+ax_sub = plt.subplot(1,1,1)
 variable = []
 chract_time = []
 max_val = []
@@ -135,16 +138,13 @@ for cnt in combinations:
     color = line.get_color()
     ax.fill_between(t, p_mean-p_std, p_mean+p_std, facecolor=color, alpha=0.3)
 
-    # Plot subtracted values
-    # line, = ax2.plot(t, p_mean_sub, label=legend_str)
-    # color = line.get_color()
-    # ax2.fill_between(t, p_mean_sub-p_std, p_mean_sub+p_std, facecolor=color, alpha=0.3)
-
     # Plot FFT
     freq = np.fft.fftfreq(t.shape[-1])
     w = blackman(n_steps)
     sp = np.fft.fft(p_mean_sub)
-    ax3.plot(freq[0:n_steps*dt]/dt, np.abs(sp)[0:n_steps*dt])
+    ax3.plot(freq[0:n_steps*dt]*1000, np.abs(sp)[0:n_steps*dt])
+
+    ax_sub.plot(t, p_mean_sub)
 
 ax2.plot(variable, max_val)
 ax4.plot(variable, chract_time)
@@ -153,8 +153,16 @@ print(slope, r_value**2)
 
 
 #ax.set_yscale('log')
-ax.legend(loc=4)
+ax.legend(loc=4, ncol=3)
 ax.set_xlabel(r'Time ($\tau$)')
 ax.set_ylabel(r'Order parameter')
+ax2.set_xlabel(r'J ($\tau^{-1}$)')
+ax2.set_ylabel(r'Order Parameter ($t \to \infty$)')
+ax3.set_xlabel(r'Frequency')
+ax3.set_ylabel(r'Contribution')
+ax4.set_xlabel(r'J ($\tau^{-1}$)')
+ax4.set_ylabel(r'Characteristic Time ($\tau$)')
+
+
 
 plt.show()
