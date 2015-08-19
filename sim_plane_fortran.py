@@ -99,13 +99,12 @@ def main(parameters):
 
     # timestep
     dx = parameters['dx']
-    dt = 5*dx/nu_0
+    dt = dx/nu_0
 
     # outfile for data
     tnow = datetime.now()
-    outfile_video = 'plane_' + datetime.strftime(tnow,str(parameters['outfile_video']))
-    outfile_analysis = 'plane_' + datetime.strftime(tnow,str(parameters['outfile_analysis']))
-    outfile_postrotation = 'plane_' + datetime.strftime(tnow,str(parameters['outfile_postrotation']))
+    outfile_video = datetime.strftime(tnow,str(parameters['outfile_video_plane']))
+    outfile_analysis = datetime.strftime(tnow,str(parameters['outfile_analysis_plane']))
 
     # calculate radius of sphere from the packing parameter
     phi_pack = float(parameters['phi_pack'])
@@ -133,15 +132,12 @@ def main(parameters):
 
     # ----- INITIALIZE RANDOM POSITION AND ORIENTATION ----- #
 
-    # get random positions for all particles
-    # x = 0.5*rho*(2*np.random.rand(N) - 1)
-    # y = 0.5*rho*(2*np.random.rand(N) - 1)
-    # z = np.zeros(N)
-
-    # r = np.vstack((x,y,z))
-
+    # Start position in hexagonal array
     r, Nx, Ny, b = startPositions(N)
     N = Nx*Ny
+    # pin positions of boundary particles
+    do_not_update_pos = b
+    
     # get random angle for unit vector <n> in the local plane
     nu=2*np.pi*np.random.rand(N)
 
@@ -183,8 +179,6 @@ def main(parameters):
     plt.show()
 
     #sys.exit('Ok')
-    # pin positions
-    do_not_update_pos = b
 
     # ----- SIMULATION ----- #
     for step in range(0,n_steps+relax_time):
@@ -218,7 +212,8 @@ def main(parameters):
             ax.plot(r[0,boundary], r[1,boundary], 'xk')
             plt.show()
 
-            fixed_list, fixed_boundary = getDelaunayTrianglesOnPlane(r[0:2,:])
+            fixed_list = list_
+            fixed_boundary = boundary
 
             if N_fix > 0:
                 # fix N_pin positions
@@ -248,7 +243,7 @@ def main(parameters):
                 for point_chemo in chemo_points:
                     dir_chemo = point_chemo - r[:,i]
                     dist_to_chemo = np.sqrt(np.sum(dir_chemo**2))
-                    force_chemo += np.cross(n[:,i],dir_chemo/dist_to_chemo)*np.exp(-dist_to_chemo)
+                    force_chemo += np.cross(n[:,i],dir_chemo/dist_to_chemo)*np.exp(-dist_to_chemo/2)
 
             # Calculate new direction n
             dn=dt*(np.inner(e_z[:,i], J*e_rot + J_chemo*force_chemo) +
@@ -268,7 +263,7 @@ def main(parameters):
         n[2,:] = 0
         n = n/np.sqrt(np.sum(n**2,0))
 
-        # Calculate neighbors
+        #Calculate neighbors
         # if (t<0) or update_nn:
         #     list_, boundary1 = getDelaunayTrianglesOnPlane(r[0:2,:])
         # else:
@@ -316,5 +311,5 @@ if __name__ == "__main__":
     parameters = readConfigFile('parameters.ini')
     main(parameters)
     print('Updating metadata...')
-    metadata_lib.generateMetadata('./data')
+    metadata_lib.generateMetadata('./data', plane = True)
     print('Done')
