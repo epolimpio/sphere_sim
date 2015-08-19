@@ -56,6 +56,8 @@ F_vs_t=data[3]
 pairs = data[5]
 list_, baricenters, out_polygon_dict, pairs2, all_areas = getVoronoiOnSphere(r_vs_t[0])
 
+output_file = datetime.strftime(dtime,'./movies/sim_sphere_%Y-%m-%d_%H-%M-%S.mp4')
+
 # parameters
 N = parameters['N']
 n_steps = parameters['n_steps']
@@ -161,4 +163,9 @@ def animate(f):
 plt.clf()
 (fig,cells,springs,borders,ang_mom)=setup_figure()
 anim = animation.FuncAnimation(fig, animate, frames=n_steps//n_save, interval=1, blit=False)
-plt.show()
+FFMpegWriter = animation.writers['ffmpeg']
+metadata = dict(title='Movie Test', artist='Matplotlib',
+    comment='Moving cells')
+writer = FFMpegWriter(fps=5, metadata=metadata)
+anim.save(output_file, writer=writer, bitrate=800)
+# plt.show()
