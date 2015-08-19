@@ -73,7 +73,7 @@ def findFilesWithParameters(metadata, parameters):
     f.close()
     return files, dates
 
-def generateMetadata(path, parameters_file = './parameters.ini'):
+def generateMetadata(path, parameters_file = './parameters.ini', plane = False):
     """
     Generate the metadata for reference of the parameters used.
     This avoid the open and read of all the files while looking
@@ -82,9 +82,14 @@ def generateMetadata(path, parameters_file = './parameters.ini'):
     using Excel, for example (open tha .dat file on it).
     """
     # parameters
-    file_start = 'sphere_data_analysis_'
-    file_pattern = 'sphere_data_analysis_{y}-{m}-{d}_{h}-{mm}-{s}.p'
-    outfile = join(path,'metadata.dat')
+    if plane:
+        file_start = 'plane_data_analysis_'
+        file_pattern = 'plane_data_analysis_{y}-{m}-{d}_{h}-{mm}-{s}.p'
+        outfile = join(path,'metadata_plane.dat')
+    else:     
+        file_start = 'sphere_data_analysis_'
+        file_pattern = 'sphere_data_analysis_{y}-{m}-{d}_{h}-{mm}-{s}.p'
+        outfile = join(path,'metadata.dat')
 
     # get all the files in the folder
     allfiles = [ f for f in listdir(path)
@@ -146,3 +151,4 @@ if __name__ == "__main__":
     Run the main when externally called
     """
     generateMetadata('./data')
+    generateMetadata('./data', plane=True)

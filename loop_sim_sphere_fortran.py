@@ -11,9 +11,9 @@ parameters = readConfigFile('parameters.ini')
 
 all_N = [100]
 all_phi = [1]
-all_nu = [1]
-all_J = (0.15*np.arange(1,6)).tolist()
-all_eta = (0.15*np.arange(6,11)).tolist()
+all_nu = (0.15*np.arange(1,11)).tolist()
+all_J = (0.15*np.arange(1,11)).tolist()
+all_eta = [1]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
@@ -28,8 +28,9 @@ combinations = list(itertools.product(*all_comb))
 
 # ----- RUN FOR ALL THE PARAMETERS ----- #
 repeat = 3
-for combination in combinations:
-
+num_runs = len(combinations)
+for run, combination in enumerate(combinations):
+    
     [N, phi_pack, nu_0, J, eta_n, anis, dist, update_nn, N_fix, chemoatt, Jchemo] = combination
     # change the parameters
     parameters['N'] = N
@@ -45,6 +46,7 @@ for combination in combinations:
     parameters['J_chemo'] = Jchemo
 
     for i in range(0,repeat):
+        print('Run: {0}/{1}, Repeat: {2}/{3}'.format(run+1, num_runs, i+1, repeat))
         sim_sphere_fortran.main(parameters)
 
 print('Updating metadata...')

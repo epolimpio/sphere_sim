@@ -112,3 +112,4 @@ doc/README.fdb_latexmk
 *.out
 doc/README.synctex.gz
 *.o
+*.mp4
