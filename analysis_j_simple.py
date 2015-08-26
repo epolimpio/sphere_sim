@@ -39,8 +39,8 @@ parameters = readConfigFile('parameters.ini')
 all_N = [100]
 all_phi = [1]
 all_nu = [1]
-all_J = [0.15, 0.6, 0.75, 0.9]
-all_eta = [0.75]
+all_J = [0.15, 0.6, 1.05, 1.5]
+all_eta = [0.6]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
@@ -141,8 +141,8 @@ for cnt in combinations:
     # Plot FFT
     freq = np.fft.fftfreq(t.shape[-1])
     w = blackman(n_steps)
-    sp = np.fft.fft(p_mean_sub)
-    ax3.plot(freq[0:n_steps*dt]*1000, np.abs(sp)[0:n_steps*dt])
+    sp = np.fft.fft(p_mean_sub) 
+    ax3.plot(freq[0:n_steps*dt]/dt, np.abs(sp)[0:n_steps*dt])
 
     ax_sub.plot(t, p_mean_sub)
 

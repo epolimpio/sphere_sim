@@ -36,14 +36,14 @@ parameters = readConfigFile('parameters.ini')
 # Now we choose the parameters we want to compare in the graph
 all_N = [100]
 all_phi = [1]
-all_nu = [0.5]
-all_J = [0.1, 0.5, 1, 2]
-all_eta = [0.5]
+all_nu = (0.3*np.arange(1,6)).tolist()
+all_J = [0.3]
+all_eta = [1]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
 all_N_fix = [0]
-all_chemoatt = [0, 1]
+all_chemoatt = [0]
 
 all_comb = [all_N, all_phi, all_nu, all_J, all_eta, 
             all_anisotropy, all_max_dist, all_update_nn,
@@ -51,8 +51,8 @@ all_comb = [all_N, all_phi, all_nu, all_J, all_eta,
 conditions = list(itertools.product(*all_comb))
 
 # Here we define the legend style
-variables_legend = ['J', 'chemoatt']
-legend_format = r'$J = {0}, c = {1}$'
+variables_legend = ['nu_0']
+legend_format = r'$\nu_0 = {0}$'
 # define the parameters of the graphs
 combinations = {}
 cnt = 0
@@ -116,6 +116,7 @@ for cnt in combinations:
     p_std = p_std - p_mean**2
 
     popt, pcov = curve_fit(sigmoidalFunction, t, p_mean)
+    print(popt[0]/popt[1], 1/popt[2])
 
     p_mean_sub = p_mean - sigmoidalFunction(t, *popt)
     # Plot the result

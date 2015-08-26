@@ -38,19 +38,18 @@ parameters = transformParameters(parameters)
 # simulation parameters
 N = parameters['N']
 n_steps = parameters['n_steps']
-nu_0 = parameters['nu_0']
 phi_pack = float(parameters['phi_pack'])
 rho=np.sqrt(N/4/phi_pack) # sphere radius
 
 # timestep
 dx = parameters['dx']
-dt = dx/nu_0
-t = np.arange(n_steps)*dt
 
 # Now we choose the parameters we want to compare in the graph
-var1_str = 'J' 
+var1_str = 'nu_0' 
+val1_label = r'$\nu_0$'
 var1_val = 0.15*np.arange(1,11)
-var2_str = 'eta_n'
+var2_str = 'J'
+val2_label = r'$J$'
 var2_val = 0.15*np.arange(1,11)
 
 var1, var2 = np.meshgrid(var1_val, var2_val)
@@ -76,6 +75,9 @@ for i in range(0,n1):
         if n_files == 0:
             print('WARNING! No files found for var1 = {0}, var2 = {1}'.format(var1[i,j], var2[i,j]))
         # Calculate the average over the files
+        nu_0 = parameters['nu_0']
+        dt = dx/nu_0
+        t = np.arange(n_steps)*dt
         p_mean = [0.0,]*n_steps
         p_std = [0.0,]*n_steps
         for file_ in files:
@@ -99,8 +101,19 @@ for i in range(0,n1):
         max_val[i,j] = a/b
 
 contour1 = ax1.contourf(var1, var2, c_time)
-fig1.colorbar(contour1)
+cb1 = fig1.colorbar(contour1)
+fig1.suptitle('Characteristic time', size=18, weight='bold')
+ax1.set_xlabel(val1_label, size=18)
+ax1.set_ylabel(val2_label, size=18)
+ax1.tick_params(labelsize=16)
+cb1.ax.tick_params(labelsize=16)
+
 contour2 = ax2.contourf(var1, var2, max_val)
-fig2.colorbar(contour2)
+cb2 = fig2.colorbar(contour2)
+fig2.suptitle('Maximum value order parameter', size=18, weight='bold')
+ax2.set_xlabel(val1_label, size=18)
+ax2.set_ylabel(val2_label, size=18)
+ax2.tick_params(labelsize=16)
+cb2.ax.tick_params(labelsize=16)
 
 plt.show()

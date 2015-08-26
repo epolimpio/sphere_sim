@@ -4,9 +4,9 @@ import os
 
 def sigmoidalFunction(x, a, b, c):
     """
-    Calculates the sigmoidal function S(x) = a/(b + exp(-c*x)) + d
+    Calculates the sigmoidal function S(x) = a/(b + exp(-c*x))
     x is a numpy vector
-    a, b, c and d are real numbers
+    a, b, c are real numbers
     """
     return a/(b + np.exp(-c*x))
 
