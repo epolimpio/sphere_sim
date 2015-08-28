@@ -155,7 +155,10 @@ def animate(f):
             if (b[z_plane,i1] > 0) and (b[z_plane,i2] > 0):
                 borders[i].set_data([b[x_plane,i1], b[x_plane,i2]], [b[y_plane,i1], b[y_plane,i2]])
             else:
-                borders[i].set_data([], [])        
+                borders[i].set_data([], [])
+
+    if f == 20:
+        fig.savefig('test.png')    
 
       
     return (cells,springs,borders,ang_mom)

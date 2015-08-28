@@ -36,11 +36,11 @@ parameters = readConfigFile('parameters.ini')
 
 # Now we choose the parameters we want to compare in the graph
 # conditions: N, phi, eta, nu, J
-all_N = [100]
+all_N = [500]
 all_phi = [1]
-all_nu = [1]
-all_J = [0.15, 0.6, 1.05, 1.5]
-all_eta = [0.6]
+all_nu = [1.05]
+all_J = (0.15*np.arange(1,11)[::2]).tolist()
+all_eta = [1]
 all_anisotropy = [1]
 all_max_dist = [0]
 all_update_nn = [1]
@@ -50,7 +50,7 @@ conditions = list(itertools.product(*all_comb))
 
 # Here we define the legend style
 variables_legend = ['J']
-legend_format = r'$J = {0}$'
+legend_format = r'$J = {0:.2f}$'
 # define the parameters of the graphs
 combinations = {}
 cnt = 0
@@ -79,6 +79,7 @@ ax_sub = plt.subplot(1,1,1)
 variable = []
 chract_time = []
 max_val = []
+freq_max = []
 for cnt in combinations:
     combination = combinations[cnt]
     files,dates = findFilesWithParameters(metadata, combination)
@@ -139,11 +140,15 @@ for cnt in combinations:
     ax.fill_between(t, p_mean-p_std, p_mean+p_std, facecolor=color, alpha=0.3)
 
     # Plot FFT
-    freq = np.fft.fftfreq(t.shape[-1])
+    freq = np.fft.fftfreq(t.shape[-1])/dt
     w = blackman(n_steps)
     sp = np.fft.fft(p_mean_sub) 
-    ax3.plot(freq[0:n_steps*dt]/dt, np.abs(sp)[0:n_steps*dt])
+    ax3.plot(freq[0:n_steps*dt], np.abs(sp)[0:n_steps*dt])
 
+    contrib =  np.abs(sp)[0:n_steps*dt]
+    freq_max_val = np.average(freq[0:n_steps*dt], weights=contrib)
+
+    freq_max.append(freq_max_val)
     ax_sub.plot(t, p_mean_sub)
 
 ax2.plot(variable, max_val)
@@ -151,6 +156,7 @@ ax4.plot(variable, chract_time)
 slope, intercept, r_value, p_value, std_err = stats.linregress(np.array(variable),np.array(chract_time))
 print(slope, r_value**2)
 
+print(freq_max)
 
 #ax.set_yscale('log')
 ax.legend(loc=4, ncol=3)

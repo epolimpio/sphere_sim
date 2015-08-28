@@ -47,10 +47,10 @@ dx = parameters['dx']
 # Now we choose the parameters we want to compare in the graph
 var1_str = 'nu_0' 
 val1_label = r'$\nu_0$'
-var1_val = 0.15*np.arange(1,11)
+var1_val = 0.1*np.arange(0,11)+1
 var2_str = 'J'
 val2_label = r'$J$'
-var2_val = 0.15*np.arange(1,11)
+var2_val = 0.05*np.arange(1,11)
 
 var1, var2 = np.meshgrid(var1_val, var2_val)
 
@@ -72,6 +72,7 @@ for i in range(0,n1):
         parameters[var2_str] = var2[i,j]
         files,dates = findFilesWithParameters(metadata, parameters)
         n_files = len(files)
+        # print(var1[i,j], var2[i,j], n_files)
         if n_files == 0:
             print('WARNING! No files found for var1 = {0}, var2 = {1}'.format(var1[i,j], var2[i,j]))
         # Calculate the average over the files

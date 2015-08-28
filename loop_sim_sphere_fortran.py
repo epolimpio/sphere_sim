@@ -9,7 +9,7 @@ import itertools
 
 parameters = readConfigFile('parameters.ini')
 
-all_N = [100]
+all_N = [500]
 all_phi = [1]
 all_nu = (0.15*np.arange(1,11)).tolist()
 all_J = (0.15*np.arange(1,11)).tolist()
@@ -27,7 +27,7 @@ all_comb = [all_N, all_phi, all_nu, all_J, all_eta,
 combinations = list(itertools.product(*all_comb))
 
 # ----- RUN FOR ALL THE PARAMETERS ----- #
-repeat = 3
+repeat = 1
 num_runs = len(combinations)
 for run, combination in enumerate(combinations):
     
